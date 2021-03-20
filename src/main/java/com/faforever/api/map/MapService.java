@@ -15,15 +15,14 @@ import com.faforever.api.utils.FilePermissionUtil;
 import com.faforever.api.utils.NameUtil;
 import com.faforever.commons.io.Unzipper;
 import com.faforever.commons.io.Zipper;
-import com.faforever.commons.map.PreviewGenerator;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
-import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
+import org.apache.commons.io.FileUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,34 +33,30 @@ import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.faforever.api.map.MapService.ScenarioMapInfo.CONFIGURATION_STANDARD_TEAMS_ARMIES;
-import static com.faforever.api.map.MapService.ScenarioMapInfo.CONFIGURATION_STANDARD_TEAMS_NAME;
-import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_DECLARATION_MAP;
-import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_DECLARATION_SAVE;
-import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_DECLARATION_SCRIPT;
 import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_ENDING_MAP;
 import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_ENDING_SAVE;
 import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_ENDING_SCENARIO;
 import static com.faforever.api.map.MapService.ScenarioMapInfo.FILE_ENDING_SCRIPT;
 import static com.faforever.api.map.MapService.ScenarioMapInfo.MANDATORY_FILES;
-import static com.github.nocatch.NoCatch.noCatch;
+import static com.faforever.api.map.MapService.MapDetailInfo.MANDATORY_MAP_DETAILS;
 import static java.text.MessageFormat.format;
 
 @Service
@@ -70,21 +65,26 @@ import static java.text.MessageFormat.format;
 public class MapService {
   private static final Pattern MAP_NAME_INVALID_CHARACTER_PATTERN = Pattern.compile("[a-zA-Z0-9\\- ]+");
   private static final Pattern MAP_NAME_DOES_NOT_START_WITH_LETTER_PATTERN = Pattern.compile("^[^a-zA-Z]+");
-  private static final Pattern ADAPTIVE_MAP_PATTERN = Pattern.compile("AdaptiveMap\\w=\\wtrue");
+  private static final Pattern MAP_SIZE_PATTERN = Pattern.compile("^([0-9]{1,3})[ xX]{1,3}([0-9]{1,3})");
   private static final int MAP_NAME_MINUS_MAX_OCCURENCE = 3;
   private static final int MAP_NAME_MIN_LENGTH = 4;
   private static final int MAP_NAME_MAX_LENGTH = 50;
 
-  private static final String[] ADAPTIVE_REQUIRED_FILES = new String[]{
-    "_options.lua",
-    "_tables.lua",
-  };
-
-  private static final Charset MAP_CHARSET = StandardCharsets.ISO_8859_1;
-  private static final String LEGACY_FOLDER_PREFIX = "maps/";
   private final FafApiProperties fafApiProperties;
   private final MapRepository mapRepository;
   private final ContentService contentService;
+
+  @VisibleForTesting
+  private final Set<String> officialMapArchives = ImmutableSet.of(
+    "btdata.ccx", "btmaps.ccx", "ccdata.ccx", "ccmaps.ccx", "ccmiss.ccx", "cdmaps.ccx", "rev31.gp3",
+    "tactics1.hpi", "tactics2.hpi", "tactics3.hpi", "tactics4.hpi", "tactics5.hpi", "tactics6.hpi", "tactics7.hpi", "tactics8.hpi",
+    "totala1.hpi", "totala2.hpi", "totala3.hpi", "totala4.hpi", "worlds.hpi", "afark.ufo", "aflea.ufo", "ascarab.ufo",
+    "cometctr.ufo", "cormabm.ufo", "cornecro.ufo", "corplas.ufo", "evadrivd.ufo", "example.ufo", "floggen.ufo", "mndsmars.ufo",
+    "tademo.ufo");
+
+  public boolean isOfficialArchive(String archiveName) {
+    return officialMapArchives.stream().anyMatch(name -> name.equalsIgnoreCase(archiveName));
+  }
 
   public MapNameValidationResponse requestMapNameValidation(String mapName) {
     Assert.notNull(mapName, "The map name is mandatory.");
@@ -92,7 +92,7 @@ public class MapService {
     validateMapName(mapName);
     MapNameBuilder mapNameBuilder = new MapNameBuilder(mapName);
 
-    Integer nextVersion = mapRepository.findOneByDisplayName(mapNameBuilder.getDisplayName())
+    int nextVersion = mapRepository.findOneByDisplayName(mapNameBuilder.getDisplayName())
       .map(map -> map.getVersions().stream()
         .mapToInt(MapVersion::getVersion)
         .map(i -> i + 1)
@@ -144,58 +144,83 @@ public class MapService {
     }
   }
 
-  @VisibleForTesting
-  void validateScenarioLua(String scenarioLua) {
-    try {
-      MapLuaAccessor mapLua = MapLuaAccessor.of(scenarioLua);
-      MapNameBuilder mapNameBuilder = new MapNameBuilder(mapLua.getName()
-        .orElseThrow(() -> ApiException.of(ErrorCode.MAP_NAME_MISSING)));
-      validateScenarioLua(mapLua, mapNameBuilder);
-    } catch (IOException | LuaError e) {
-      throw ApiException.of(ErrorCode.PARSING_LUA_FILE_FAILED, e.getMessage());
-    }
-  }
-
   @Transactional
   @SneakyThrows
   @CacheEvict(value = {Map.TYPE_NAME, MapVersion.TYPE_NAME}, allEntries = true)
-  public void uploadMap(InputStream mapDataInputStream, String mapFilename, Player author, boolean isRanked) {
+  public void uploadMap(InputStream mapDataInputStream, Player author, boolean isRanked, List<java.util.Map<String,String>> mapsDetails) {
     Assert.notNull(author, "'author' must not be null");
     Assert.isTrue(mapDataInputStream.available() > 0, "'mapData' must not be empty");
 
     checkAuthorVaultBan(author);
 
     Path rootTempFolder = contentService.createTempDir();
+    long tempFreeSpace = rootTempFolder.toFile().getFreeSpace();
+    long mapsFreeSpace = fafApiProperties.getMap().getTargetDirectory().toFile().getFreeSpace();
+    log.info("[uploadMap] rootTempFolder='{}'. temp free space={}GB; maps directory free space={}GB; archive size={}kB",
+      rootTempFolder, (int)(tempFreeSpace/1e9), (int)(mapsFreeSpace/1e9), (int)(mapDataInputStream.available()/1e3));
+    if (tempFreeSpace < 10*mapDataInputStream.available() || mapsFreeSpace < 10*mapDataInputStream.available()) {
+      throw ApiException.of(ErrorCode.SERVER_DISK_FULL);
+    }
 
     try {
       Path unzippedFileFolder = unzipToTemporaryDirectory(mapDataInputStream, rootTempFolder);
+      log.info("[uploadMap] unzippedFileFolder=''{}''", unzippedFileFolder);
       Path mapFolder = validateMapFolderStructure(unzippedFileFolder);
+      log.info("[uploadMap] mapFolder=''{}''", mapFolder);
+      String archiveFileName = mapFolder.getFileName().toString();  // the directory and the archive located within it are named the same
+      if (isOfficialArchive(archiveFileName)) {
+        throw ApiException.of(ErrorCode.MAP_ARCHIVE_OFFICIAL, archiveFileName);
+      }
+      log.info("[uploadMap] archiveFileName=''{}''", archiveFileName);
       validateRequiredFiles(mapFolder, MANDATORY_FILES);
 
-      MapLuaAccessor mapLua = parseScenarioLua(mapFolder);
-      MapNameBuilder mapNameBuilder = new MapNameBuilder(mapLua.getName()
-        .orElseThrow(() -> ApiException.of(ErrorCode.MAP_NAME_MISSING)));
+      Path finalArchiveDestination = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
+      log.info("[uploadMap] finalArchiveDestination=''{}''", finalArchiveDestination);
+      if (Files.exists(finalArchiveDestination)) {
+        throw ApiException.of(ErrorCode.MAP_NAME_CONFLICT, finalArchiveDestination);
+      }
 
-      mapLua.isAdaptive().ifPresent(isAdaptive -> {
-        if (isAdaptive) {
-          validateRequiredFiles(mapFolder, ADAPTIVE_REQUIRED_FILES);
+      validateMapsDetails(mapsDetails);
+      java.util.Map<String, Optional<Map>> existingMaps = new HashMap<>();
+      for (java.util.Map<String,String> mapDetails: mapsDetails) {
+        String mapName = mapDetails.get("name");
+        validateMapDetails(mapDetails, MANDATORY_MAP_DETAILS);
+        existingMaps.put(mapDetails.get("name"), mapRepository.findOneByDisplayName(mapName));
+        if (!mapDetails.get("archive").equals(archiveFileName)) {
+          throw ApiException.of(ErrorCode.MAP_DETAIL_ARCHIVE_NAME_MISMATCH, mapName, mapDetails.get("archive"), archiveFileName);
         }
-      });
+        if (existingMaps.get(mapName).isPresent()) {
+          validateAgainstExistingMap(existingMaps.get(mapName).get(), author, mapDetails.get("crc"));
+        }
+      }
 
-      validateScenarioLua(mapLua, mapNameBuilder);
+      for (java.util.Map<String,String> mapDetails: mapsDetails) {
+        String mapName = mapDetails.get("name");
+        updateHibernateMapEntities(mapDetails, existingMaps.get(mapName), author, isRanked);
+      }
 
-      Optional<Map> existingMapOptional = validateMapMetadata(mapLua, mapNameBuilder, author);
+      Path finalPath = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
+      log.info("[uploadMap] finalPath=''{}''", finalPath);
+      copyMapArchive(mapFolder.resolve(archiveFileName), finalPath);
 
-      updateHibernateMapEntities(mapLua, existingMapOptional, author, isRanked, mapNameBuilder);
+      Path previewPath = fafApiProperties.getMap().getDirectoryPreviewPath();
+      log.info("[uploadMap] previewPath=''{}''", previewPath);
 
-      Path mapFolderAfterRenaming = unzippedFileFolder.resolveSibling(
-        mapNameBuilder.buildFolderName(mapLua.getMapVersion$()));
-      Files.move(mapFolder, mapFolderAfterRenaming);
+      java.util.Set<Path> mapNamesSet = mapsDetails.stream()
+        .map(mapDetails -> Paths.get(mapDetails.get("name") + ".png"))
+        .collect(Collectors.toSet());
 
-      updateLuaFiles(mapFolder, mapFolderAfterRenaming);
-      generatePreview(mapFolderAfterRenaming);
+      Files.createDirectories(previewPath, FilePermissionUtil.directoryPermissionFileAttributes());
+      try(Stream<Path> paths = Files.walk(Paths.get(mapFolder.resolve("mini").toString()))) {
+        paths
+          .map(p -> new Path[] {p, Paths.get(URLDecoder.decode(p.getFileName().toString(), StandardCharsets.ISO_8859_1))})
+          .filter(p -> Files.isRegularFile(p[0]) && mapNamesSet.contains(p[1]))
+          .forEach(p -> {
+            try {  Files.copy(p[0], previewPath.resolve(p[1])); }
+            catch (IOException e) { log.warn("unable to copy '{0}' to '{1}'", p[0], p[1]); }
+          });
+      }
 
-      zipMapData(mapFolderAfterRenaming, mapNameBuilder.buildFinalZipPath(mapLua.getMapVersion$()));
     } finally {
       mapDataInputStream.close();
       FileSystemUtils.deleteRecursively(rootTempFolder);
@@ -245,6 +270,11 @@ public class MapService {
       }
     }
 
+    Path archiveFileName = mapFolder.getFileName();
+    if (!Files.exists(mapFolder.resolve(archiveFileName))) {
+      throw ApiException.of(ErrorCode.MAP_MISSING_ARCHIVE_INSIDE_MAP_FOLDER, archiveFileName);
+    }
+
     return mapFolder;
   }
 
@@ -266,125 +296,103 @@ public class MapService {
     }
   }
 
-  private MapLuaAccessor parseScenarioLua(Path mapFolder) throws IOException {
-    try (Stream<Path> mapFilesStream = Files.list(mapFolder)) {
-      Path scenarioLuaPath = mapFilesStream
-        .filter(myFile -> myFile.toString().endsWith(FILE_ENDING_SCENARIO))
-        .findFirst()
-        .orElseThrow(() -> ApiException.of(ErrorCode.MAP_SCENARIO_LUA_MISSING));
-      return MapLuaAccessor.of(scenarioLuaPath);
-    } catch (LuaError e) {
-      throw ApiException.of(ErrorCode.PARSING_LUA_FILE_FAILED, e.getMessage());
+  private void validateMapsDetails(List<java.util.Map<String,String>> mapsDetails) {
+    if (mapsDetails.isEmpty()) {
+      List<Error> errors = new ArrayList<>(List.of(new Error(ErrorCode.MAP_DETAIL_EMPTY)));
+      throw ApiException.of(errors);
     }
   }
 
-  private void validateScenarioLua(MapLuaAccessor mapLua, MapNameBuilder mapNameBuilder) {
-    List<Error> errors = new ArrayList<>();
+  @VisibleForTesting
+  void validateMapDetails(java.util.Map<String,String> mapDetails, java.util.Map<String,java.util.regex.Pattern> requiredKeyValueRegexes) {
+    List<Error> errors;
+    String mapName = mapDetails.getOrDefault("name", "<unknown>");
 
-    validateLuaPathVariable(mapLua, FILE_DECLARATION_MAP, mapNameBuilder, FILE_ENDING_MAP).ifPresent(errors::add);
-    validateLuaPathVariable(mapLua, FILE_DECLARATION_SAVE, mapNameBuilder, FILE_ENDING_SAVE).ifPresent(errors::add);
-    validateLuaPathVariable(mapLua, FILE_DECLARATION_SCRIPT, mapNameBuilder, FILE_ENDING_SCRIPT).ifPresent(errors::add);
-
-    if (!mapLua.getDescription().isPresent()) {
-      errors.add(new Error(ErrorCode.MAP_DESCRIPTION_MISSING));
-    }
-    if (mapLua.hasInvalidTeam()) {
-      errors.add(new Error(ErrorCode.MAP_FIRST_TEAM_FFA));
-    }
-    if (!mapLua.getType().isPresent()) {
-      errors.add(new Error(ErrorCode.MAP_TYPE_MISSING));
-    }
-    if (!mapLua.getSize().isPresent()) {
-      errors.add(new Error(ErrorCode.MAP_SIZE_MISSING));
+    errors = requiredKeyValueRegexes.entrySet().stream()
+      .filter(requiredEntry -> !mapDetails.containsKey(requiredEntry.getKey()))
+      .map(requiredEntry -> new Error(ErrorCode.MAP_DETAIL_MISSING_KEY, mapName, requiredEntry.getKey()))
+      .collect(Collectors.toList());
+    if (!errors.isEmpty()) {
+      throw ApiException.of(errors);
     }
 
-    if (!mapLua.getMapVersion().isPresent()) {
-      errors.add(new Error(ErrorCode.MAP_VERSION_MISSING));
-    }
-
-    if (!mapLua.getNoRushRadius().isPresent()) {
-      // The game can start without it, but the GPG map editor will crash on opening such a map.
-      errors.add(new Error(ErrorCode.NO_RUSH_RADIUS_MISSING));
-    }
-
+    errors = requiredKeyValueRegexes.entrySet().stream()
+      .filter(requiredEntry -> !requiredEntry.getValue().matcher(mapDetails.get(requiredEntry.getKey())).find())
+      .map(requiredEntry -> new Error(ErrorCode.MAP_DETAIL_BAD_KEY, mapName, requiredEntry.getKey(), mapDetails.get(requiredEntry.getKey()), requiredEntry.getValue()))
+      .collect(Collectors.toList());
     if (!errors.isEmpty()) {
       throw ApiException.of(errors);
     }
   }
 
-  private Optional<Error> validateLuaPathVariable(MapLuaAccessor mapLua, String variableName, MapNameBuilder mapNameBuilder, String fileEnding) {
-    String mapFileName = mapNameBuilder.buildFileName(fileEnding);
-    String mapFolderNameWithoutVersion = mapNameBuilder.buildFolderNameWithoutVersion();
-
-    String regex = format("\\/maps\\/{0}(\\.v\\d{4})?\\/{1}",
-      mapFolderNameWithoutVersion, mapFileName);
-
-    if (!mapLua.hasVariableMatchingIgnoreCase(regex, variableName)) {
-      return Optional.of(new Error(ErrorCode.MAP_SCRIPT_LINE_MISSING,
-        format("{0} = ''/maps/{1}/{2}''", variableName, mapFolderNameWithoutVersion, mapFileName)));
-    }
-
-    return Optional.empty();
-  }
-
-  private Optional<Map> validateMapMetadata(MapLuaAccessor mapLua, MapNameBuilder mapNameBuilder, Player author) {
-    String displayName = mapNameBuilder.getDisplayName();
-
-    validateMapName(displayName);
-
-    int newVersion = mapLua.getMapVersion()
-      .orElseThrow(() -> ApiException.of(ErrorCode.MAP_VERSION_MISSING));
-
-    if (Files.exists(mapNameBuilder.buildFinalZipPath(newVersion))) {
-      throw ApiException.of(ErrorCode.MAP_NAME_CONFLICT, mapNameBuilder.buildFinalZipName(newVersion));
-    }
-
-    Optional<Map> existingMapOptional = mapRepository.findOneByDisplayName(displayName);
-    existingMapOptional
-      .ifPresent(existingMap -> {
-        Optional.ofNullable(existingMap.getAuthor())
-          .filter(existingMapAuthor -> !Objects.equals(existingMapAuthor, author))
-          .ifPresent(existingMapAuthor -> {
-            throw ApiException.of(ErrorCode.MAP_NOT_ORIGINAL_AUTHOR, existingMap.getDisplayName());
-          });
-
-        if (existingMap.getVersions().stream()
-          .anyMatch(mapVersion -> mapVersion.getVersion() == newVersion)) {
-          throw ApiException.of(ErrorCode.MAP_VERSION_EXISTS, existingMap.getDisplayName(), newVersion);
-        }
+  private void validateAgainstExistingMap(Map existingMap, Player author, String newCrc32) {
+    Optional.ofNullable(existingMap.getAuthor())
+      .filter(existingMapAuthor -> !Objects.equals(existingMapAuthor, author))
+      .ifPresent(existingMapAuthor -> {
+        throw ApiException.of(ErrorCode.MAP_NOT_ORIGINAL_AUTHOR, existingMap.getDisplayName());
       });
 
-    return existingMapOptional;
+    if (existingMap.getVersions().stream()
+      .anyMatch(mapVersion -> mapVersion.getFilename().split("/")[2].equals(newCrc32))) {
+      throw ApiException.of(ErrorCode.MAP_VERSION_EXISTS, existingMap.getDisplayName(), newCrc32);
+    }
   }
 
-  private Map updateHibernateMapEntities(MapLuaAccessor mapLua, Optional<Map> existingMapOptional, Player author, boolean isRanked, MapNameBuilder mapNameBuilder) {
-    // the scenario lua is supposed to be validate already, thus we call the unwrapping $-methods
-    String mapName = mapNameBuilder.getDisplayName();
+  static private Integer[] getMapSize(String size, String description) {
+    for (String s: List.of(size, description)) {
+      java.util.regex.Matcher m = MAP_SIZE_PATTERN.matcher(s);
+      if (m.find()) {
+        try {
+          Integer[] result = { Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)) };
+          return result;
+        }
+        catch (NumberFormatException e) { }
+        catch (IndexOutOfBoundsException e) { }
+      }
+    }
+
+    return new Integer[] {8,8};
+  }
+
+  static private int getMaxPlayers(String players) {
+    // from all kinds of nasty things eg "2,4,6,8" or "1v1 or 2v2"
+    int maxPlayers = java.util.Arrays.stream(players.replaceAll("[^0-9v]+", ",").split(","))
+      .map(s -> java.util.Arrays.stream(s.split("v"))
+        .map(v -> {
+          try { return Integer.parseInt(v); }
+          catch (NumberFormatException ex) { return 0; }
+        })
+        .reduce(0, (a,b) -> a+b))
+      .reduce(0, (a,b) -> a>b ? a : b);
+
+    return maxPlayers >= 2 ? maxPlayers : 10;
+  }
+
+  private Map updateHibernateMapEntities(java.util.Map<String,String> mapDetails, Optional<Map> existingMapOptional, Player author, boolean isRanked) {
+    // mapDetails is supposed to be validated already
 
     Map map = existingMapOptional
       .orElseGet(() ->
         new Map()
-          .setDisplayName(mapName)
+          .setDisplayName(mapDetails.get("name"))
           .setAuthor(author)
       );
 
-    LuaValue standardTeamsConfig = mapLua.getFirstTeam$();
-
     map
-      .setMapType(mapLua.getType$())
-      .setBattleType(standardTeamsConfig.get(CONFIGURATION_STANDARD_TEAMS_NAME).tojstring());
+      .setMapType("FFA")
+      .setBattleType("skirmish");
 
-    LuaValue size = mapLua.getSize$();
+    Integer[] size = getMapSize(mapDetails.get("size"), mapDetails.get("description"));
     MapVersion version = new MapVersion()
-      .setDescription(mapLua.getDescription$().replaceAll("<LOC .*?>", ""))
-      .setWidth(size.get(1).toint())
-      .setHeight(size.get(2).toint())
+      .setDescription(mapDetails.get("description"))
+      .setWidth(size[0])
+      .setHeight(size[1])
       .setHidden(false)
       .setRanked(isRanked)
-      .setMaxPlayers(standardTeamsConfig.get(CONFIGURATION_STANDARD_TEAMS_ARMIES).length())
-      .setVersion(mapLua.getMapVersion$())
+      .setMaxPlayers(getMaxPlayers(mapDetails.get("players")))
+      .setVersion(1+map.getVersions().size())
       .setMap(map)
-      .setFilename(LEGACY_FOLDER_PREFIX + mapNameBuilder.buildFinalZipName(mapLua.getMapVersion$()));
+      .setFilename(String.format("%s/%s/%s", mapDetails.get("archive"), mapDetails.get("name"), mapDetails.get("crc")));
 
     map.getVersions().add(version);
 
@@ -392,34 +400,6 @@ public class MapService {
     mapRepository.save(map);
 
     return map;
-  }
-
-  private void updateLuaFiles(Path oldFolderPath, Path newFolderPath) throws IOException {
-    String oldNameFolder = "/maps/" + oldFolderPath.getFileName();
-    String newNameFolder = "/maps/" + newFolderPath.getFileName();
-    try (Stream<Path> mapFileStream = Files.list(newFolderPath)) {
-      mapFileStream
-        .filter(path -> path.toString().toLowerCase().endsWith(".lua"))
-        .forEach(path -> noCatch(() -> {
-          List<String> lines = Files.readAllLines(path, MAP_CHARSET).stream()
-            .map(line -> line.replaceAll("(?i)" + oldNameFolder, newNameFolder))
-            .collect(Collectors.toList());
-          Files.write(path, lines, MAP_CHARSET);
-        }));
-    }
-  }
-
-  private void generatePreview(Path newMapFolder) throws IOException {
-    String previewFilename = newMapFolder.getFileName() + ".png";
-    generateImage(
-      fafApiProperties.getMap().getDirectoryPreviewPathSmall().resolve(previewFilename),
-      newMapFolder,
-      fafApiProperties.getMap().getPreviewSizeSmall());
-
-    generateImage(
-      fafApiProperties.getMap().getDirectoryPreviewPathLarge().resolve(previewFilename),
-      newMapFolder,
-      fafApiProperties.getMap().getPreviewSizeLarge());
   }
 
   private void zipMapData(Path newMapFolder, Path finalZipPath) throws IOException, ArchiveException {
@@ -432,12 +412,11 @@ public class MapService {
     FilePermissionUtil.setDefaultFilePermission(finalZipPath);
   }
 
-  private void generateImage(Path target, Path baseDir, int size) throws IOException {
-    BufferedImage image = PreviewGenerator.generatePreview(baseDir, size, size);
-    if (target.getNameCount() > 0) {
-      Files.createDirectories(target.getParent(), FilePermissionUtil.directoryPermissionFileAttributes());
-    }
-    ImageIO.write(image, "png", target.toFile());
+  private void copyMapArchive(Path newMapArchive, Path finalArchivePath) throws IOException {
+    Files.createDirectories(finalArchivePath.getParent(), FilePermissionUtil.directoryPermissionFileAttributes());
+    Files.copy(newMapArchive, finalArchivePath);
+    // TODO if possible, this should be done using umask instead
+    FilePermissionUtil.setDefaultFilePermission(finalArchivePath);
   }
 
   static class ScenarioMapInfo {
@@ -445,18 +424,29 @@ public class MapService {
     static final String CONFIGURATION_STANDARD_TEAMS_ARMIES = "armies";
     static final String FILE_DECLARATION_MAP = "map";
     static final String FILE_ENDING_SCENARIO = "_scenario.lua";
-    static final String FILE_ENDING_MAP = ".scmap";
+    static final String FILE_ENDING_MAP = ".ufo";
+    static final String DIRECTORY_MINIMAPS = "mini";
     static final String FILE_DECLARATION_SAVE = "save";
     static final String FILE_ENDING_SAVE = "_save.lua";
     static final String FILE_DECLARATION_SCRIPT = "script";
     static final String FILE_ENDING_SCRIPT = "_script.lua";
 
     static final String[] MANDATORY_FILES = new String[]{
-      FILE_ENDING_SCENARIO,
-      FILE_ENDING_MAP,
-      FILE_ENDING_SAVE,
-      FILE_ENDING_SCRIPT,
+      DIRECTORY_MINIMAPS,
+      FILE_ENDING_MAP
     };
+  }
+
+  static class MapDetailInfo {
+    static final java.util.regex.Pattern REGEX_CRC32 = java.util.regex.Pattern.compile("^[0-9a-f]{8}$");
+    static final java.util.regex.Pattern REGEX_NOT_EMPTY = java.util.regex.Pattern.compile(".{1,128}");
+    static final java.util.regex.Pattern REGEX_NO_SLASHES = java.util.regex.Pattern.compile("^[^/]{4,64}$");
+    static final java.util.regex.Pattern REGEX_HPI_ARCHIVE = java.util.regex.Pattern.compile("^[0-9A-Za-z \\(\\)-_+=\\[\\]\\{\\}',.]{4,64}\\.(ccx|ufo|hpi)$");
+    static final java.util.Map<String, java.util.regex.Pattern> MANDATORY_MAP_DETAILS = java.util.Map.of(
+      "name",REGEX_NO_SLASHES,
+      "archive", REGEX_HPI_ARCHIVE,
+      "crc", REGEX_CRC32,
+      "description", REGEX_NOT_EMPTY);
   }
 
   private class MapNameBuilder {

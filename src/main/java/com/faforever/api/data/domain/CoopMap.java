@@ -30,8 +30,7 @@ public class CoopMap {
   private String filename;
   // Set by CoopMapEnhancer
   private String downloadUrl;
-  private String thumbnailUrlLarge;
-  private String thumbnailUrlSmall;
+  private String thumbnailUrl;
   private String folderName;
 
   @Column(name = "type")
@@ -75,14 +74,8 @@ public class CoopMap {
 
   @Transient
   @ComputedAttribute
-  public String getThumbnailUrlLarge() {
-    return thumbnailUrlLarge;
-  }
-
-  @Transient
-  @ComputedAttribute
-  public String getThumbnailUrlSmall() {
-    return thumbnailUrlSmall;
+  public String getThumbnailUrl() {
+    return thumbnailUrl;
   }
 
   @Transient

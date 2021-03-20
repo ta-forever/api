@@ -4,10 +4,8 @@ faf-api:
     publicKeyPath: ${JWT_PUBLIC_KEY_PATH}
   map:
     target-directory: ${MAP_UPLOAD_PATH}
-    directory-preview-path-small: ${MAP_PREVIEW_PATH_SMALL}
-    directory-preview-path-large: ${MAP_PREVIEW_PATH_LARGE}
-    small-previews-url-format: ${MAP_SMALL_PREVIEWS_URL_FORMAT}
-    large-previews-url-format: ${MAP_LARGE_PREVIEWS_URL_FORMAT}
+    directory-preview-path: ${MAP_PREVIEW_PATH}
+    previews-url-format: ${MAP_PREVIEWS_URL_FORMAT}
     download-url-format: ${MAP_DOWNLOAD_URL_FORMAT}
   mod:
     download-url-format: ${MOD_DOWNLOAD_URL_FORMAT}
