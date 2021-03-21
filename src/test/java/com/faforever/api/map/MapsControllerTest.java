@@ -73,13 +73,13 @@ public class MapsControllerTest {
   @Test
   void successUpload() throws Exception {
     FafApiProperties props = new FafApiProperties();
-    String jsonString = "{}";
+    String jsonString = "{'isRanked':'true', 'mapDetails':[{'name':'Beta Tropics (Coasts)', 'archive':'Beta Tropics (Coasts).ufo', 'crc':'deadbeef', 'description':'a map'}]}".replace("'", "\"");
     ObjectMapper mapper = new ObjectMapper();
     JsonNode node = mapper.readTree(jsonString);
 
     when(fafApiProperties.getMap()).thenReturn(props.getMap());
     when(objectMapper.readTree(anyString())).thenReturn(node);
-    String zipFile = "command_conquer_rush.v0007.zip";
+    String zipFile = "Beta Tropics (Coasts).tar";
     try (InputStream inputStream = loadMapResourceAsStream(zipFile)) {
       MockMultipartFile file = new MockMultipartFile("file",
         zipFile,
