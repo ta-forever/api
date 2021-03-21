@@ -75,7 +75,8 @@ VALUES (1, 1),
        (2, 22);
 
 INSERT INTO name_history (change_time, user_id, previous_name)
-VALUES (NOW(), 2, 'OLD_MODERATOR');
+VALUES (NOW() - INTERVAL 10 YEAR, 3, 'OLD_ADMIN'),
+       (NOW(), 2, 'OLD_MODERATOR');
 
 INSERT INTO game_featuredMods (id, gamemod, name, description, publish, git_url, git_branch, file_extension, allow_override)
 VALUES
