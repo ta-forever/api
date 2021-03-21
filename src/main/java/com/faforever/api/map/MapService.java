@@ -382,14 +382,14 @@ public class MapService {
       .setMapType("FFA")
       .setBattleType("skirmish");
 
-    Integer[] size = getMapSize(mapDetails.get("size"), mapDetails.get("description"));
+    Integer[] size = getMapSize(mapDetails.getOrDefault("size", ""), mapDetails.get("description"));
     MapVersion version = new MapVersion()
       .setDescription(mapDetails.get("description"))
       .setWidth(size[0])
       .setHeight(size[1])
       .setHidden(false)
       .setRanked(isRanked)
-      .setMaxPlayers(getMaxPlayers(mapDetails.get("players")))
+      .setMaxPlayers(getMaxPlayers(mapDetails.getOrDefault("players","10")))
       .setVersion(1+map.getVersions().size())
       .setMap(map)
       .setFilename(String.format("%s/%s/%s", mapDetails.get("archive"), mapDetails.get("name"), mapDetails.get("crc")));
