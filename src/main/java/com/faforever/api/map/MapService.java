@@ -36,6 +36,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -194,27 +195,33 @@ public class MapService {
         }
       }
 
+      java.util.Set<Path> mapPreviewFileNameSet = mapsDetails.stream()
+        .map(mapDetails -> Paths.get(mapDetails.get("name") + ".png"))
+        .collect(Collectors.toSet());
+
+      mapPreviewFileNameSet.stream()
+        .forEach(p -> {
+          Path expectedPreviewPathEncoded = mapFolder.resolve("mini").resolve(URLEncoder.encode(p.toString(), StandardCharsets.ISO_8859_1));
+          Path expectedPreviewPathDecoded = mapFolder.resolve("mini").resolve(p);
+          if (!Files.isRegularFile(expectedPreviewPathEncoded) && !Files.isRegularFile(expectedPreviewPathDecoded)) {
+            throw ApiException.of(ErrorCode.MAP_MISSING_PREVIEW, p);
+          }
+        });
+
       for (java.util.Map<String,String> mapDetails: mapsDetails) {
         String mapName = mapDetails.get("name");
         updateHibernateMapEntities(mapDetails, existingMaps.get(mapName), author, isRanked);
       }
 
       Path finalPath = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
-      log.info("[uploadMap] finalPath=''{}''", finalPath);
       copyMapArchive(mapFolder.resolve(archiveFileName), finalPath);
 
       Path previewPath = fafApiProperties.getMap().getDirectoryPreviewPath();
-      log.info("[uploadMap] previewPath=''{}''", previewPath);
-
-      java.util.Set<Path> mapNamesSet = mapsDetails.stream()
-        .map(mapDetails -> Paths.get(mapDetails.get("name") + ".png"))
-        .collect(Collectors.toSet());
-
       Files.createDirectories(previewPath, FilePermissionUtil.directoryPermissionFileAttributes());
       try(Stream<Path> paths = Files.walk(Paths.get(mapFolder.resolve("mini").toString()))) {
         paths
           .map(p -> new Path[] {p, Paths.get(URLDecoder.decode(p.getFileName().toString(), StandardCharsets.ISO_8859_1))})
-          .filter(p -> Files.isRegularFile(p[0]) && mapNamesSet.contains(p[1]))
+          .filter(p -> Files.isRegularFile(p[0]) && mapPreviewFileNameSet.contains(p[1]))
           .forEach(p -> {
             try {  Files.copy(p[0], previewPath.resolve(p[1])); }
             catch (IOException e) { log.warn("unable to copy '{0}' to '{1}'", p[0], p[1]); }
@@ -271,7 +278,7 @@ public class MapService {
     }
 
     Path archiveFileName = mapFolder.getFileName();
-    if (!Files.exists(mapFolder.resolve(archiveFileName))) {
+    if (!Files.isRegularFile(mapFolder.resolve(archiveFileName))) {
       throw ApiException.of(ErrorCode.MAP_MISSING_ARCHIVE_INSIDE_MAP_FOLDER, archiveFileName);
     }
 
@@ -420,15 +427,10 @@ public class MapService {
   }
 
   static class ScenarioMapInfo {
-    static final String CONFIGURATION_STANDARD_TEAMS_NAME = "name";
-    static final String CONFIGURATION_STANDARD_TEAMS_ARMIES = "armies";
-    static final String FILE_DECLARATION_MAP = "map";
     static final String FILE_ENDING_SCENARIO = "_scenario.lua";
     static final String FILE_ENDING_MAP = ".ufo";
     static final String DIRECTORY_MINIMAPS = "mini";
-    static final String FILE_DECLARATION_SAVE = "save";
     static final String FILE_ENDING_SAVE = "_save.lua";
-    static final String FILE_DECLARATION_SCRIPT = "script";
     static final String FILE_ENDING_SCRIPT = "_script.lua";
 
     static final String[] MANDATORY_FILES = new String[]{

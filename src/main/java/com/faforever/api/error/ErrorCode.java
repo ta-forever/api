@@ -107,7 +107,8 @@ public enum ErrorCode {
   MAP_DETAIL_EMPTY(196, "Missing Map Details", "There are no map details attached to the archive"),
   MAP_DETAIL_ARCHIVE_NAME_MISMATCH(197, "Bad Archive Name", "The details for Map ''{0}'' indicate contained in archive ''{1}''.  However uploaded archive name is ''{2}''"),
   SERVER_DISK_FULL(198, "Server Disk Full", "You guys have uploaded too much stuff server is bulging at the seams!"),
-  MAP_ARCHIVE_OFFICIAL(199, "Bad Map Archive", "Uploading official Cavedog map archive ''{0}'' is not permitted!");
+  MAP_ARCHIVE_OFFICIAL(199, "Bad Map Archive", "Uploading official Cavedog map archive ''{0}'' is not permitted!"),
+  MAP_MISSING_PREVIEW(200, "Missing Map Preview", "Map Preview ''{0}'' expected, but not found");
   ;
 
 

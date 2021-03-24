@@ -221,7 +221,8 @@ public class MapServiceTest {
       "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badcrc1",
       "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badcrc2",
       "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badarchive",
-      "MAP_DETAIL_ARCHIVE_NAME_MISMATCH,Beta Tropics (Coasts).tar,wrongarchive"
+      "MAP_DETAIL_ARCHIVE_NAME_MISMATCH,Beta Tropics (Coasts).tar,wrongarchive",
+      "MAP_MISSING_PREVIEW,wrong_preview_filename.tar,valid"
     })
     void uploadFails(String errorCodeEnumValue, String fileName, String detailsKey) {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
