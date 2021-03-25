@@ -199,14 +199,18 @@ public class MapService {
         .map(mapDetails -> Paths.get(mapDetails.get("name") + ".png"))
         .collect(Collectors.toSet());
 
-      mapPreviewFileNameSet.stream()
-        .forEach(p -> {
-          Path expectedPreviewPathEncoded = mapFolder.resolve("mini").resolve(URLEncoder.encode(p.toString(), StandardCharsets.ISO_8859_1));
-          Path expectedPreviewPathDecoded = mapFolder.resolve("mini").resolve(p);
-          if (!Files.isRegularFile(expectedPreviewPathEncoded) && !Files.isRegularFile(expectedPreviewPathDecoded)) {
-            throw ApiException.of(ErrorCode.MAP_MISSING_PREVIEW, p);
-          }
-        });
+      java.util.Set<Path> presentPreviewFileNameSet;
+      try(Stream<Path> paths = Files.walk(Paths.get(mapFolder.resolve("mini").toString()))) {
+        presentPreviewFileNameSet = paths
+          .filter(p -> Files.isRegularFile(p))
+          .map(p -> Paths.get(URLDecoder.decode(p.getFileName().toString(), StandardCharsets.ISO_8859_1)))
+          .collect(Collectors.toSet());
+      }
+      java.util.Set<Path> missingPreviewFileNameSet = new java.util.HashSet<>(mapPreviewFileNameSet);
+      missingPreviewFileNameSet.removeAll(presentPreviewFileNameSet);
+      if (!missingPreviewFileNameSet.isEmpty()) {
+        throw ApiException.of(ErrorCode.MAP_MISSING_PREVIEW, missingPreviewFileNameSet, missingPreviewFileNameSet.size()-1);
+      }
 
       for (java.util.Map<String,String> mapDetails: mapsDetails) {
         String mapName = mapDetails.get("name");
