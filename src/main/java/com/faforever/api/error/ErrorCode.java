@@ -103,7 +103,7 @@ public enum ErrorCode {
   API_KEY_INVALID(192, "Api key is invalid", "The api key is invalid."),
   UNKNOWN_STEAM_ID(193, "Unable to resolve steam id", "The Steam ID ''{0}'' does not match any account."),
   MAP_DETAIL_MISSING_KEY(194, "Missing Map Detail", "The Map ''{0}'' is missing detail ''{1}''."),
-  MAP_DETAIL_BAD_KEY(195, "Bad Map Detail", "The Map ''{0}'' has invalid detail ''{1}''=''{2}''. A valid value would match ''{3}''."),
+  MAP_DETAIL_BAD_KEY(195, "Bad Map Detail", "Map ''{0}'' has invalid ''{1}''=''{2}''. Please ensure that {3}"),
   MAP_DETAIL_EMPTY(196, "Missing Map Details", "There are no map details attached to the archive"),
   MAP_DETAIL_ARCHIVE_NAME_MISMATCH(197, "Bad Archive Name", "The details for Map ''{0}'' indicate contained in archive ''{1}''.  However uploaded archive name is ''{2}''"),
   SERVER_DISK_FULL(198, "Server Disk Full", "You guys have uploaded too much stuff server is bulging at the seams!"),

@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.io.FileUtils;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -315,7 +316,7 @@ public class MapService {
   }
 
   @VisibleForTesting
-  void validateMapDetails(java.util.Map<String,String> mapDetails, java.util.Map<String,java.util.regex.Pattern> requiredKeyValueRegexes) {
+  void validateMapDetails(java.util.Map<String,String> mapDetails, java.util.Map<String,Pair<java.util.regex.Pattern,String>> requiredKeyValueRegexes) {
     List<Error> errors;
     String mapName = mapDetails.getOrDefault("name", "<unknown>");
 
@@ -328,8 +329,8 @@ public class MapService {
     }
 
     errors = requiredKeyValueRegexes.entrySet().stream()
-      .filter(requiredEntry -> !requiredEntry.getValue().matcher(mapDetails.get(requiredEntry.getKey())).find())
-      .map(requiredEntry -> new Error(ErrorCode.MAP_DETAIL_BAD_KEY, mapName, requiredEntry.getKey(), mapDetails.get(requiredEntry.getKey()), requiredEntry.getValue()))
+      .filter(requiredEntry -> !requiredEntry.getValue().getFirst().matcher(mapDetails.get(requiredEntry.getKey())).find())
+      .map(requiredEntry -> new Error(ErrorCode.MAP_DETAIL_BAD_KEY, mapName, requiredEntry.getKey(), mapDetails.get(requiredEntry.getKey()), requiredEntry.getValue().getSecond()))
       .collect(Collectors.toList());
     if (!errors.isEmpty()) {
       throw ApiException.of(errors);
@@ -446,13 +447,13 @@ public class MapService {
   static class MapDetailInfo {
     static final java.util.regex.Pattern REGEX_CRC32 = java.util.regex.Pattern.compile("^[0-9a-f]{8}$");
     static final java.util.regex.Pattern REGEX_NOT_EMPTY = java.util.regex.Pattern.compile(".{1,128}");
-    static final java.util.regex.Pattern REGEX_NO_SLASHES = java.util.regex.Pattern.compile("^[^/]{4,64}$");
-    static final java.util.regex.Pattern REGEX_HPI_ARCHIVE = java.util.regex.Pattern.compile("^[0-9A-Za-z \\(\\)-_+=\\[\\]\\{\\}',.]{4,64}\\.(ccx|ufo|hpi)$");
-    static final java.util.Map<String, java.util.regex.Pattern> MANDATORY_MAP_DETAILS = java.util.Map.of(
-      "name",REGEX_NO_SLASHES,
-      "archive", REGEX_HPI_ARCHIVE,
-      "crc", REGEX_CRC32,
-      "description", REGEX_NOT_EMPTY);
+    static final java.util.regex.Pattern REGEX_NO_SLASHES = java.util.regex.Pattern.compile("^[^/]{1,64}$");
+    static final java.util.regex.Pattern REGEX_HPI_ARCHIVE = java.util.regex.Pattern.compile("^[0-9A-Za-z \\(\\)\\-_+=\\[\\]\\{\\}',.]{1,64}\\.(ccx|ufo|hpi)$");
+    static final java.util.Map<String, Pair<java.util.regex.Pattern, String>> MANDATORY_MAP_DETAILS = java.util.Map.of(
+      "name", Pair.of(REGEX_NO_SLASHES, "map names contain no slashes ('/') and are between 1 and 64 characters long"),
+      "archive", Pair.of(REGEX_HPI_ARCHIVE, "archive filenames have .ccx, .ufo or .hpi extension; contain only characters 0-9, A-Z, a-z, ()[]{}+-=_,. or space; and are between 1 and 64 characters long"),
+      "crc", Pair.of(REGEX_CRC32, "crc is exactly 8 characters long and consists of lower-case hexidecimal digits (0-9, a-f) only"),
+      "description", Pair.of(REGEX_NOT_EMPTY, "map's description is not empty"));
   }
 
   private class MapNameBuilder {
