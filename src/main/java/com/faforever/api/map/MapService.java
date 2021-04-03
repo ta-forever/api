@@ -399,7 +399,10 @@ public class MapService {
       .findAny();
 
     if (!version.isPresent()) {
-      MapVersion newVersion = new MapVersion().setVersion(1 + map.getVersions().size());
+      int newVersionNumber = 1+map.getVersions().stream()
+        .map(v -> v.getVersion())
+        .reduce(0, (a, b) -> a>b ? a : b);
+      MapVersion newVersion = new MapVersion().setVersion(newVersionNumber);
       map.getVersions().add(newVersion);
       version = Optional.of(newVersion);
     }
