@@ -22,7 +22,6 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
-import org.apache.commons.io.FileUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
@@ -37,7 +36,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -346,7 +344,7 @@ public class MapService {
 
     if (existingMap.getVersions().stream()
       .anyMatch(mapVersion -> mapVersion.getFilename().split("/")[2].equals(newCrc32))) {
-      throw ApiException.of(ErrorCode.MAP_VERSION_EXISTS, existingMap.getDisplayName(), newCrc32);
+      //throw ApiException.of(ErrorCode.MAP_VERSION_EXISTS, existingMap.getDisplayName(), newCrc32);
     }
   }
 
@@ -395,18 +393,26 @@ public class MapService {
       .setBattleType("skirmish");
 
     Integer[] size = getMapSize(mapDetails.getOrDefault("size", ""), mapDetails.get("description"));
-    MapVersion version = new MapVersion()
+
+    Optional<MapVersion> version = map.getVersions().stream()
+      .filter(v -> v.getCrc().equals(mapDetails.get("crc")))
+      .findAny();
+
+    if (!version.isPresent()) {
+      MapVersion newVersion = new MapVersion().setVersion(1 + map.getVersions().size());
+      map.getVersions().add(newVersion);
+      version = Optional.of(newVersion);
+    }
+
+    version.get()
       .setDescription(mapDetails.get("description"))
       .setWidth(size[0])
       .setHeight(size[1])
       .setHidden(false)
       .setRanked(isRanked)
       .setMaxPlayers(getMaxPlayers(mapDetails.getOrDefault("players","10")))
-      .setVersion(1+map.getVersions().size())
       .setMap(map)
       .setFilename(String.format("%s/%s/%s", mapDetails.get("archive"), mapDetails.get("name"), mapDetails.get("crc")));
-
-    map.getVersions().add(version);
 
     // this triggers validation
     mapRepository.save(map);

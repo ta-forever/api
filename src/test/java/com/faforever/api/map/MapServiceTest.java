@@ -302,12 +302,31 @@ public class MapServiceTest {
       com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
         .setDisplayName("Beta Tropics (Coasts)")
         .setAuthor(author)
-        .setVersions(Collections.singletonList(new MapVersion().setFilename("Beta Tropics (Coasts).ufo/Beta Tropics Costs/deadbeef")));
+        .setVersions(Collections.singletonList(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("original.ufo/Beta Tropics (Coasts)/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("Beta Tropics (Coasts)")
+          .setRanked(true)
+          .setVersion(13)
+        ));
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
 
       when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
 
       java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
-      uploadFails(ErrorCode.MAP_VERSION_EXISTS, "Beta Tropics (Coasts).tar", List.of(mapDetails));
+      instance.uploadMap(mapData, author, true, List.of(mapDetails));
+
+      ArgumentCaptor<com.faforever.api.data.domain.Map> mapCaptor = ArgumentCaptor.forClass(com.faforever.api.data.domain.Map.class);
+      verify(mapRepository).save(mapCaptor.capture());
+      assertEquals(1, mapCaptor.getValue().getVersions().size());
+      assertEquals(13, mapCaptor.getValue().getVersions().get(0).getVersion());
+      assertEquals("a map", mapCaptor.getValue().getVersions().get(0).getDescription());
+      assertEquals("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deadbeef", mapCaptor.getValue().getVersions().get(0).getFilename());
     }
 
     @Test
