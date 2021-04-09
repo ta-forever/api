@@ -346,6 +346,11 @@ public class MapService {
       .anyMatch(mapVersion -> mapVersion.getFilename().split("/")[2].equals(newCrc32))) {
       //throw ApiException.of(ErrorCode.MAP_VERSION_EXISTS, existingMap.getDisplayName(), newCrc32);
     }
+
+    if (existingMap.getVersions().stream()
+      .anyMatch(mapVersion -> officialMapArchives.contains(mapVersion.getFilename().split("/")[0]))) {
+      throw ApiException.of(ErrorCode.MAP_ARCHIVE_OFFICIAL, existingMap.getDisplayName());
+    }
   }
 
   static private Integer[] getMapSize(String size, String description) {

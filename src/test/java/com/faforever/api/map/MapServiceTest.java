@@ -331,6 +331,32 @@ public class MapServiceTest {
     }
 
     @Test
+    void officialVersionExistsAlready() {
+      when(fafApiProperties.getMap()).thenReturn(mapProperties);
+
+      com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
+        .setDisplayName("SHERWOOD")
+        .setAuthor(author)
+        .setVersions(Collections.singletonList(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("totala2.hpi/SHERWOOD/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("SHERWOOD")
+          .setRanked(true)
+          .setVersion(1)
+        ));
+      when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
+
+      // NB archive is NOT the official archive name "totala2.hpi", only the map name "SHERWOOD" is official.
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "SHERWOOD", "description", "a map", "crc", "deadbeef", "archive", "total2.ufo");
+      uploadFails(ErrorCode.MAP_ARCHIVE_OFFICIAL, "map_name_official.tar", List.of(mapDetails));
+    }
+
+    @Test
     void newVersion() {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
 
@@ -351,11 +377,9 @@ public class MapServiceTest {
           .setRanked(true)
           .setVersion(13)
           );
-
-      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
-
       when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
 
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
       java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deedbeef", "archive", "Beta Tropics (Coasts).ufo");
       instance.uploadMap(mapData, author, true, List.of(mapDetails));
 
