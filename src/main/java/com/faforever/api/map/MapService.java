@@ -43,6 +43,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -75,12 +76,14 @@ public class MapService {
   private final ContentService contentService;
 
   @VisibleForTesting
-  private final Set<String> officialMapArchives = ImmutableSet.of(
+  private final Set<String> _officialMapArchives = ImmutableSet.of(
     "btdata.ccx", "btmaps.ccx", "ccdata.ccx", "ccmaps.ccx", "ccmiss.ccx", "cdmaps.ccx", "rev31.gp3",
     "tactics1.hpi", "tactics2.hpi", "tactics3.hpi", "tactics4.hpi", "tactics5.hpi", "tactics6.hpi", "tactics7.hpi", "tactics8.hpi",
     "totala1.hpi", "totala2.hpi", "totala3.hpi", "totala4.hpi", "worlds.hpi", "afark.ufo", "aflea.ufo", "ascarab.ufo",
     "cometctr.ufo", "cormabm.ufo", "cornecro.ufo", "corplas.ufo", "evadrivd.ufo", "example.ufo", "floggen.ufo", "mndsmars.ufo",
     "tademo.ufo");
+
+  private final Set<String> officialMapArchives = new HashSet<String>(_officialMapArchives);
 
   public boolean isOfficialArchive(String archiveName) {
     return officialMapArchives.stream().anyMatch(name -> name.equalsIgnoreCase(archiveName));
