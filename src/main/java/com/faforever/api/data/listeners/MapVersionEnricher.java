@@ -26,10 +26,12 @@ public class MapVersionEnricher {
   @PostLoad
   public void enhance(MapVersion mapVersion) {
     String filename = mapVersion.getFilename();
-    mapVersion.setDownloadUrl(String.format(apiProperties.getMap().getDownloadUrlFormat(), filename.replace("maps/", "")));
-    mapVersion.setThumbnailUrlLarge(String.format(apiProperties.getMap().getLargePreviewsUrlFormat(), filename.replace("maps/", "").replace(".zip", ".png")));
-    mapVersion.setThumbnailUrlSmall(String.format(apiProperties.getMap().getSmallPreviewsUrlFormat(), filename.replace("maps/", "").replace(".zip", ".png")));
-    mapVersion.setFolderName(filename.substring(filename.indexOf('/') + 1, filename.indexOf(".zip")));
+    String [] filenameParts = filename.split("/");
+    mapVersion.setDownloadUrl(String.format(apiProperties.getMap().getDownloadUrlFormat(), filenameParts[0]));
+    mapVersion.setThumbnailUrl(String.format(apiProperties.getMap().getPreviewsUrlFormat(), filenameParts[1] + ".png"));
+    mapVersion.setArchiveName(filenameParts[0]);
+    mapVersion.setName(filenameParts[1]);
+    mapVersion.setCrc(filenameParts[2]);
   }
 
   @CacheEvict(allEntries = true, cacheNames = {Map.TYPE_NAME, MapVersion.TYPE_NAME})

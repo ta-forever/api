@@ -33,10 +33,8 @@ faf-api:
     faf-hydra-issuer: https://hydra.test.faforever.com/
   map:
     target-directory: "build/cache/map/maps"
-    directory-preview-path-small: "build/cache/map_previews/small"
-    directory-preview-path-large: "build/cache/map_previews/large"
-    small-previews-url-format: "http://localhost/faf/vault/map_previews/small/%s"
-    large-previews-url-format: "http://localhost/faf/vault/map_previews/large/%s"
+    directory-preview-path: "build/cache/map_previews/mini"
+    previews-url-format: "http://localhost/faf/vault/map_previews/mini/%s"
     download-url-format: "http://localhost/faf/vault/maps/%s"
   avatar:
     download-url-format: "http://localhost/faf/avatars/%s"

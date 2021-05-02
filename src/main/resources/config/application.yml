@@ -52,8 +52,8 @@ spring:
     active: ${API_PROFILE:dev}
   servlet:
     multipart:
-      max-file-size: 350MB
-      max-request-size: 350MB
+      max-file-size: 2GB
+      max-request-size: 2GB
       file-size-threshold: 5MB
   mail:
     host: ${MAIL_HOST:false}

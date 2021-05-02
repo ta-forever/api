@@ -68,13 +68,9 @@ public class FafApiProperties {
   @Data
   public static class Map {
     /**
-     * For instance {@code http://content.faforever.com/faf/vault/map_previews/small/%s}
+     * For instance {@code http://content.faforever.com/faf/vault/map_previews/mini/%s}
      */
-    private String smallPreviewsUrlFormat;
-    /**
-     * For instance {@code http://content.faforever.com/faf/vault/map_previews/large/%s}
-     */
-    private String largePreviewsUrlFormat;
+    private String previewsUrlFormat;
     /**
      * For instance {@code http://content.faforever.com/faf/vault/maps/%s}
      */
@@ -84,25 +80,17 @@ public class FafApiProperties {
      */
     private Path targetDirectory = Paths.get("static/maps");
     /**
-     * The directory in which small map previews are stored.
+     * The directory in which map previews are stored.
      */
-    private Path directoryPreviewPathSmall = Paths.get("static/map_previews/small");
+    private Path directoryPreviewPath = Paths.get("static/map_previews/mini");
     /**
-     * The directory in which large map previews are stored.
+     * The size (in pixels) of map previews.
      */
-    private Path directoryPreviewPathLarge = Paths.get("static/map_previews/large");
-    /**
-     * The size (in pixels) of small map previews.
-     */
-    private int previewSizeSmall = 128;
-    /**
-     * The size (in pixels) of large map previews.
-     */
-    private int previewSizeLarge = 512;
+    private int previewSize = 512;
     /**
      * Allowed file extensions of uploaded maps.
      */
-    private Set<String> allowedExtensions = Set.of("zip");
+    private Set<String> allowedExtensions = Set.of("zip", "tar");
   }
 
   @Data

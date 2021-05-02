@@ -39,19 +39,19 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
   private int maxPlayers;
   private int width;
   private int height;
-  private int version;
-  private String filename;
-  private String folderName;
+  private int version;        // 1,2,3,4,5 ...
+  private String filename;    // "archive.ufo/Map Name/deadbeef"
+  private String archiveName; // "archive.ufo"
+  private String name;        // "Map Name"
+  private String crc;         // "deadbeef"
   private boolean ranked;
   private boolean hidden;
   private Map map;
   private MapVersionStatistics statistics;
-  private String thumbnailUrlSmall;
-  private String thumbnailUrlLarge;
+  private String thumbnailUrl;
   private String downloadUrl;
   private List<MapVersionReview> reviews;
   private MapVersionReviewsSummary reviewsSummary;
-  private Ladder1v1Map ladder1v1Map;
 
   @UpdatePermission(expression = IsEntityOwner.EXPRESSION + " or " + AdminMapCheck.EXPRESSION)
   @Column(name = "description")
@@ -118,14 +118,8 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
 
   @Transient
   @ComputedAttribute
-  public String getThumbnailUrlSmall() {
-    return thumbnailUrlSmall;
-  }
-
-  @Transient
-  @ComputedAttribute
-  public String getThumbnailUrlLarge() {
-    return thumbnailUrlLarge;
+  public String getThumbnailUrl() {
+    return thumbnailUrl;
   }
 
   @Transient
@@ -136,8 +130,20 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
 
   @Transient
   @ComputedAttribute
-  public String getFolderName() {
-    return folderName;
+  public String getArchiveName() {
+    return archiveName;
+  }
+
+  @Transient
+  @ComputedAttribute
+  public String getName() {
+    return name;
+  }
+
+  @Transient
+  @ComputedAttribute
+  public String getCrc() {
+    return crc;
   }
 
   @OneToMany(mappedBy = "mapVersion")

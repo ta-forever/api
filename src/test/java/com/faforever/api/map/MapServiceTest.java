@@ -10,9 +10,7 @@ import com.faforever.api.data.domain.Player;
 import com.faforever.api.error.ApiException;
 import com.faforever.api.error.Error;
 import com.faforever.api.error.ErrorCode;
-import com.faforever.commons.io.Unzipper;
 import com.google.common.io.ByteStreams;
-import junitx.framework.FileAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,24 +30,23 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.faforever.api.error.ApiExceptionMatcher.hasErrorCode;
-import static com.faforever.api.error.ApiExceptionMatcher.hasErrorCodes;
 import static com.faforever.api.error.ErrorCode.MAP_NAME_DOES_NOT_START_WITH_LETTER;
 import static com.faforever.api.error.ErrorCode.MAP_NAME_INVALID_CHARACTER;
 import static com.faforever.api.error.ErrorCode.MAP_NAME_INVALID_MINUS_OCCURENCE;
 import static com.faforever.api.error.ErrorCode.MAP_NAME_TOO_LONG;
 import static com.faforever.api.error.ErrorCode.MAP_NAME_TOO_SHORT;
 import static com.faforever.api.error.ErrorCode.MAP_SCRIPT_LINE_MISSING;
+import static com.faforever.api.map.MapService.MapDetailInfo.MANDATORY_MAP_DETAILS;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItems;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -99,6 +96,16 @@ public class MapServiceTest {
 
   @Nested
   class Validation {
+
+    @ParameterizedTest
+    @CsvSource(value={
+      "[NLJ] 10th Anniversary/[NLJ]-Maps-Pack-2019.ufo/cbefbd4f/16 x 16 map - wind +20-30e -tidal +25e - map by \"nlj\" 1v1, 2v2, 3v3, 4v4, 5v5",
+      "[NLJ] 20th Anniversary/[NLJ]-Maps-Pack-2019.ufo/e0a11b0a/19 x 19 map wind +20-30e -tidal +20e - map by \\\"nlj\\\" 1v1, 2v2, 3v3, 4v4, 5v5"
+    }, delimiterString="/")
+    void testMapDetailCrcValid(String name, String archive, String crc, String description) {
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name",name,"archive", archive, "crc", crc, "description", description);
+      instance.validateMapDetails(mapDetails, MANDATORY_MAP_DETAILS);
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -164,57 +171,15 @@ public class MapServiceTest {
     }
 
     @Test
-    void testScenarioLuaSuccessWithoutVersion() throws Exception {
-      instance.validateScenarioLua(loadMapAsString("scenario/valid_without_version_scenario.lua"));
-    }
-
-    @Test
-    void testScenarioLuaSuccessWithVersion() throws Exception {
-      instance.validateScenarioLua(loadMapAsString("scenario/valid_with_version_scenario.lua"));
-    }
-
-    @Test
-    void testScenarioLuaEmptyScenarioLua() {
-      ApiException result = assertThrows(ApiException.class, () -> instance.validateScenarioLua(""));
-      assertThat(result, hasErrorCodes(
-        ErrorCode.PARSING_LUA_FILE_FAILED
-      ));
-    }
-
-    @Test
-    void testScenarioLuaMissingAllLines() {
-      ApiException result = assertThrows(ApiException.class, () ->
-        instance.validateScenarioLua(loadMapAsString("scenario/valid_empty.lua")));
-      assertThat(result, hasErrorCodes(ErrorCode.MAP_NAME_MISSING));
-    }
-
-    @Test
-    void testScenarioLuaWrongMapLine() {
-      ApiException result = assertThrows(ApiException.class, () ->
-        instance.validateScenarioLua(loadMapAsString("scenario/missing_map_variable_scenario.lua")));
-
-      assertThat(result, hasErrorCodes(
-        ErrorCode.MAP_SCRIPT_LINE_MISSING
-      ));
-
-      assertThat(result.getErrors().length, is(1));
-      Error mapLineError = Arrays.stream(result.getErrors())
-        .filter(error -> error.getErrorCode() == MAP_SCRIPT_LINE_MISSING)
-        .findFirst().get();
-
-      assertThat(mapLineError.getArgs().length, is(1));
-      assertThat(mapLineError.getArgs()[0], is("map = '/maps/mirage/mirage.scmap'"));
-    }
-
-    @Test
     void authorBannedFromVault() {
       when(author.getActiveBanOf(BanLevel.VAULT)).thenReturn(Optional.of(
         new BanInfo()
           .setLevel(BanLevel.VAULT)
       ));
 
-      InputStream mapData = loadMapAsInputSteam("command_conquer_rush.v0007.zip");
-      assertThrows(Forbidden.class, () -> instance.uploadMap(mapData, "command_conquer_rush.v0007.zip", author, true));
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
+      assertThrows(Forbidden.class, () -> instance.uploadMap(mapData, author, true, List.of(java.util.Map.of(
+        "name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo"))));
       verify(mapRepository, never()).save(any(com.faforever.api.data.domain.Map.class));
     }
   }
@@ -231,40 +196,88 @@ public class MapServiceTest {
 
       mapProperties = new Map()
         .setTargetDirectory(finalDirectory)
-        .setDirectoryPreviewPathLarge(finalDirectory.resolve("large"))
-        .setDirectoryPreviewPathSmall(finalDirectory.resolve("small"));
+        .setDirectoryPreviewPath(finalDirectory.resolve("mini"));
       when(contentService.createTempDir()).thenReturn(temporaryDirectory);
     }
 
     @ParameterizedTest(name = "Expecting ErrorCode.{0} with file ''{1}''")
     @CsvSource(value = {
-      "MAP_MISSING_MAP_FOLDER_INSIDE_ZIP,empty.zip",
-      "MAP_FIRST_TEAM_FFA,wrong_team_name.zip",
-      "MAP_INVALID_ZIP,invalid_zip.zip", // map with more than 1 root folders in zip
-      "MAP_NAME_INVALID_CHARACTER,map_name_invalid_character.zip",
-      "MAP_FILE_INSIDE_ZIP_MISSING,without_savelua.zip",
-      "MAP_FILE_INSIDE_ZIP_MISSING,without_scenariolua.zip",
-      "MAP_FILE_INSIDE_ZIP_MISSING,without_scmap.zip",
-      "MAP_FILE_INSIDE_ZIP_MISSING,without_scriptlua.zip",
+      "MAP_ARCHIVE_OFFICIAL,map_archive_official.tar,valid",
+      "MAP_MISSING_ARCHIVE_INSIDE_MAP_FOLDER,map_file_inside_zip_missing.tar,valid",
+      "MAP_MISSING_MAP_FOLDER_INSIDE_ZIP,new_text_document.tar,valid",
+      "MAP_DETAIL_EMPTY,Beta Tropics (Coasts).tar,empty",
+      "MAP_DETAIL_MISSING_KEY,Beta Tropics (Coasts).tar,noname",
+      "MAP_DETAIL_MISSING_KEY,Beta Tropics (Coasts).tar,nodescription",
+      "MAP_DETAIL_MISSING_KEY,Beta Tropics (Coasts).tar,nocrc",
+      "MAP_DETAIL_MISSING_KEY,Beta Tropics (Coasts).tar,noarchive",
+      "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badname",
+      "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,baddescription",
+      "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badcrc1",
+      "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badcrc2",
+      "MAP_DETAIL_BAD_KEY,Beta Tropics (Coasts).tar,badarchive",
+      "MAP_DETAIL_ARCHIVE_NAME_MISMATCH,Beta Tropics (Coasts).tar,wrongarchive",
+      "MAP_MISSING_PREVIEW,wrong_preview_filename.tar,valid"
     })
-    void uploadFails(String errorCodeEnumValue, String fileName) {
-      uploadFails(ErrorCode.valueOf(errorCodeEnumValue), fileName);
+    void uploadFails(String errorCodeEnumValue, String fileName, String detailsKey) {
+      when(fafApiProperties.getMap()).thenReturn(mapProperties);
+      java.util.Map<String,String> mapDetails = new java.util.HashMap<>();
+      switch(detailsKey) {
+        case "empty":
+          uploadFails(ErrorCode.valueOf(errorCodeEnumValue), fileName, List.of());
+          return;
+        case "valid":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "noname":
+          mapDetails = java.util.Map.of("description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "nodescription":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "nocrc":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "noarchive":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef");
+          break;
+        case "badname":
+          mapDetails = java.util.Map.of("name", "Beta Tropics / Coasts", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "baddescription":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "badcrc1":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "uberl337", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "badcrc2":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "123456789", "archive", "Beta Tropics (Coasts).ufo");
+          break;
+        case "badarchive":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).zip");
+          break;
+        case "wrongarchive":
+          mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Comet Catcher.ufo");
+          break;
+      }
+
+      uploadFails(ErrorCode.valueOf(errorCodeEnumValue), fileName, List.of(mapDetails));
     }
 
-    void uploadFails(ErrorCode expectedErrorCode, String fileName) {
+    void uploadFails(ErrorCode expectedErrorCode, String fileName, List<java.util.Map<String,String>> mapsDetails) {
       InputStream mapData = loadMapAsInputSteam(fileName);
-      ApiException result = assertThrows(ApiException.class, () -> instance.uploadMap(mapData, fileName, author, true));
+      ApiException result = assertThrows(ApiException.class, () -> instance.uploadMap(mapData, author, true, mapsDetails));
       assertThat(result, hasErrorCode(expectedErrorCode));
       verify(mapRepository, never()).save(any(com.faforever.api.data.domain.Map.class));
     }
 
     @Test
-    void zipFilenameAlreadyExists() throws IOException {
+    void archiveAlreadyExists() throws IOException {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
-      Path clashedMap = finalDirectory.resolve("command_conquer_rush.v0007.zip");
+      Path clashedMap = finalDirectory.resolve("Beta Tropics (Coasts).ufo");
       assertTrue(clashedMap.toFile().createNewFile());
 
-      uploadFails(ErrorCode.MAP_NAME_CONFLICT, "command_conquer_rush.v0007.zip");
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+      uploadFails(ErrorCode.MAP_NAME_CONFLICT, "Beta Tropics (Coasts).tar", List.of(mapDetails));
     }
 
     @Test
@@ -279,7 +292,8 @@ public class MapServiceTest {
       com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map().setAuthor(bob);
       when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
 
-      uploadFails(ErrorCode.MAP_NOT_ORIGINAL_AUTHOR, "command_conquer_rush.v0007.zip");
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+      uploadFails(ErrorCode.MAP_NOT_ORIGINAL_AUTHOR, "Beta Tropics (Coasts).tar", List.of(mapDetails));
     }
 
     @Test
@@ -287,108 +301,125 @@ public class MapServiceTest {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
 
       com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
-        .setDisplayName("someName")
+        .setDisplayName("Beta Tropics (Coasts)")
         .setAuthor(author)
-        .setVersions(Collections.singletonList(new MapVersion().setVersion(7)));
+        .setVersions(Collections.singletonList(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("original.ufo/Beta Tropics (Coasts)/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("Beta Tropics (Coasts)")
+          .setRanked(true)
+          .setVersion(13)
+        ));
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
 
       when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
 
-      uploadFails(ErrorCode.MAP_VERSION_EXISTS, "command_conquer_rush.v0007.zip");
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+      instance.uploadMap(mapData, author, true, List.of(mapDetails));
+
+      ArgumentCaptor<com.faforever.api.data.domain.Map> mapCaptor = ArgumentCaptor.forClass(com.faforever.api.data.domain.Map.class);
+      verify(mapRepository).save(mapCaptor.capture());
+      assertEquals(1, mapCaptor.getValue().getVersions().size());
+      assertEquals(13, mapCaptor.getValue().getVersions().get(0).getVersion());
+      assertEquals("a map", mapCaptor.getValue().getVersions().get(0).getDescription());
+      assertEquals("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deadbeef", mapCaptor.getValue().getVersions().get(0).getFilename());
     }
 
     @Test
-    void noMapName() {
-      String zipFilename = "no_map_name.zip";
-      InputStream mapData = loadMapAsInputSteam(zipFilename);
-      ApiException result = assertThrows(ApiException.class, () -> instance.uploadMap(mapData, zipFilename, author, true));
-      assertThat(result, hasErrorCodes(ErrorCode.MAP_NAME_MISSING));
-      verify(mapRepository, never()).save(any(com.faforever.api.data.domain.Map.class));
+    void officialVersionExistsAlready() {
+      when(fafApiProperties.getMap()).thenReturn(mapProperties);
+
+      com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
+        .setDisplayName("SHERWOOD")
+        .setAuthor(author)
+        .setVersions(Collections.singletonList(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("totala2.hpi/SHERWOOD/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("SHERWOOD")
+          .setRanked(true)
+          .setVersion(1)
+        ));
+      when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
+
+      // NB archive is NOT the official archive name "totala2.hpi", only the map name "SHERWOOD" is official.
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "SHERWOOD", "description", "a map", "crc", "deadbeef", "archive", "total2.ufo");
+      uploadFails(ErrorCode.MAP_ARCHIVE_OFFICIAL, "map_name_official.tar", List.of(mapDetails));
     }
 
     @Test
-    void adaptiveFilesMissing() {
-      String zipFilename = "adaptive_map_files_missing.zip";
-      InputStream mapData = loadMapAsInputSteam(zipFilename);
-      ApiException result = assertThrows(ApiException.class, () -> instance.uploadMap(mapData, zipFilename, author, true));
-      assertThat(result, hasErrorCodes(
-        ErrorCode.MAP_FILE_INSIDE_ZIP_MISSING,
-        ErrorCode.MAP_FILE_INSIDE_ZIP_MISSING
-      ));
-      verify(mapRepository, never()).save(any(com.faforever.api.data.domain.Map.class));
-    }
+    void newVersion() {
+      when(fafApiProperties.getMap()).thenReturn(mapProperties);
 
-    @Test
-    void invalidScenario() {
-      String zipFilename = "invalid_scenario.zip";
-      InputStream mapData = loadMapAsInputSteam(zipFilename);
-      ApiException result = assertThrows(ApiException.class, () -> instance.uploadMap(mapData, zipFilename, author, true));
-      assertThat(result, hasErrorCodes(
-        ErrorCode.MAP_SCRIPT_LINE_MISSING,
-        ErrorCode.MAP_SCRIPT_LINE_MISSING,
-        ErrorCode.MAP_SCRIPT_LINE_MISSING,
-        ErrorCode.MAP_DESCRIPTION_MISSING,
-        ErrorCode.MAP_FIRST_TEAM_FFA,
-        ErrorCode.MAP_TYPE_MISSING,
-        ErrorCode.MAP_SIZE_MISSING,
-        ErrorCode.MAP_VERSION_MISSING,
-        ErrorCode.NO_RUSH_RADIUS_MISSING));
-      verify(mapRepository, never()).save(any(com.faforever.api.data.domain.Map.class));
+      com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
+        .setDisplayName("Beta Tropics (Coasts)")
+        .setAuthor(author)
+        .setVersions(new ArrayList<>());
+
+      map.getVersions().add(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("original.ufo/Beta Tropics (Coasts)/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("Beta Tropics (Coasts)")
+          .setRanked(true)
+          .setVersion(13)
+          );
+      when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
+
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deedbeef", "archive", "Beta Tropics (Coasts).ufo");
+      instance.uploadMap(mapData, author, true, List.of(mapDetails));
+
+      ArgumentCaptor<com.faforever.api.data.domain.Map> mapCaptor = ArgumentCaptor.forClass(com.faforever.api.data.domain.Map.class);
+      verify(mapRepository).save(mapCaptor.capture());
+      assertEquals(2, mapCaptor.getValue().getVersions().size());
+      assertEquals(14, mapCaptor.getValue().getVersions().get(1).getVersion());
+      assertEquals("a map", mapCaptor.getValue().getVersions().get(1).getDescription());
+      assertEquals("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deedbeef", mapCaptor.getValue().getVersions().get(1).getFilename());
     }
 
     @Test
     void positiveUploadTest() throws Exception {
-      String zipFilename = "command_conquer_rush.v0007.zip";
+      String zipFilename = "Beta Tropics (Coasts).tar";
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
       when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.empty());
       InputStream mapData = loadMapAsInputSteam(zipFilename);
 
       Path tmpDir = temporaryDirectory;
-      instance.uploadMap(mapData, zipFilename, author, true);
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
+      instance.uploadMap(mapData, author, true, List.of(mapDetails));
 
       ArgumentCaptor<com.faforever.api.data.domain.Map> mapCaptor = ArgumentCaptor.forClass(com.faforever.api.data.domain.Map.class);
       verify(mapRepository).save(mapCaptor.capture());
-      assertEquals("Command Conquer Rush", mapCaptor.getValue().getDisplayName());
-      assertEquals("skirmish", mapCaptor.getValue().getMapType());
-      assertEquals("FFA", mapCaptor.getValue().getBattleType());
+      assertEquals("Beta Tropics (Coasts)", mapCaptor.getValue().getDisplayName());
       assertEquals(1, mapCaptor.getValue().getVersions().size());
 
       MapVersion mapVersion = mapCaptor.getValue().getVersions().get(0);
-      assertEquals("For example on map crazyrush. Universal Command Conquer 3 modification by RuCommunity. Prealpha test", mapVersion.getDescription());
-      assertEquals(7, mapVersion.getVersion());
-      assertEquals(256, mapVersion.getHeight());
-      assertEquals(256, mapVersion.getWidth());
-      assertEquals(8, mapVersion.getMaxPlayers());
-      assertEquals("maps/command_conquer_rush.v0007.zip", mapVersion.getFilename());
+      assertEquals("a map", mapVersion.getDescription());
+      assertEquals(8, mapVersion.getHeight());
+      assertEquals(8, mapVersion.getWidth());
+      assertEquals(10, mapVersion.getMaxPlayers());
+      assertEquals("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deadbeef", mapVersion.getFilename());
 
       assertFalse(Files.exists(tmpDir));
 
-      Path generatedFile = finalDirectory.resolve("command_conquer_rush.v0007.zip");
-      assertTrue(Files.exists(generatedFile));
+      Path finalArchive = finalDirectory.resolve("Beta Tropics (Coasts).ufo");
+      assertTrue(Files.exists(finalArchive));
 
-      Path generatedFiles = finalDirectory.resolve("generated_files");
-      Unzipper.from(generatedFile).to(generatedFiles).unzip();
-
-      Path expectedFiles = finalDirectory.resolve("expected_files");
-      Unzipper.from(generatedFile)
-        .to(expectedFiles)
-        .unzip();
-
-      expectedFiles = expectedFiles.resolve("command_conquer_rush.v0007");
-      try (Stream<Path> fileStream = Files.list(expectedFiles)) {
-        assertEquals(fileStream.count(), 4);
-      }
-
-      try (Stream<Path> fileStream = Files.list(expectedFiles)) {
-        Path finalGeneratedFile = generatedFiles.resolve("command_conquer_rush.v0007");
-        fileStream.forEach(expectedFile ->
-          FileAssert.assertEquals("Difference in " + expectedFile.getFileName().toString(),
-            expectedFile.toFile(),
-            finalGeneratedFile.resolve(expectedFile.getFileName().toString()).toFile())
-        );
-
-        assertTrue(Files.exists(mapProperties.getDirectoryPreviewPathLarge().resolve("command_conquer_rush.v0007.png")));
-        assertTrue(Files.exists(mapProperties.getDirectoryPreviewPathSmall().resolve("command_conquer_rush.v0007.png")));
-      }
+      assertTrue(Files.exists(mapProperties.getDirectoryPreviewPath().resolve("Beta Tropics (Coasts).png")));
     }
   }
 }

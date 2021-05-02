@@ -7,10 +7,8 @@ faf-api:
     fafHydraIssuer: ${JWT_FAF_HYDRA_ISSUER:https://hydra.test.faforever.com/}
   map:
     target-directory: ${MAP_UPLOAD_PATH:build/cache/map/maps}
-    directory-preview-path-small: ${MAP_PREVIEW_PATH_SMALL:build/cache/map_previews/small}
-    directory-preview-path-large: ${MAP_PREVIEW_PATH_LARGE:build/cache/map_previews/large}
-    small-previews-url-format: ${MAP_SMALL_PREVIEWS_URL_FORMAT:http://test.content.faforever.com/faf/vault/map_previews/small/%s}
-    large-previews-url-format: ${MAP_LARGE_PREVIEWS_URL_FORMAT:http://test.content.faforever.com/faf/vault/map_previews/large/%s}
+    directory-preview-path: ${MAP_PREVIEW_PATH:build/cache/map_previews/mini}
+    previews-url-format: ${MAP_PREVIEWS_URL_FORMAT:http://test.content.faforever.com/faf/vault/map_previews/mini/%s}
     download-url-format: ${MAP_DOWNLOAD_URL_FORMAT:http://test.content.faforever.com/faf/vault/maps/%s}
   mod:
     download-url-format: ${MOD_DOWNLOAD_URL_FORMAT:http://test.content.faforever.com/faf/vault/mods/%s}

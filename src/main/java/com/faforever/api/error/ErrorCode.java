@@ -11,7 +11,7 @@ public enum ErrorCode {
   UPLOAD_INVALID_FILE_EXTENSIONS(104, "Invalid file extension", "File must have one of the following extensions: {0}."),
   MAP_NAME_TOO_LONG(105, "Invalid map name", "The map name must not exceed {0, number} characters, was: {1, number}"),
   MAP_NOT_ORIGINAL_AUTHOR(106, "Permission denied", "Only the original author is allowed to upload new versions of map: {0}."),
-  MAP_VERSION_EXISTS(107, "Duplicate map version", "Map ''{0}'' with version ''{1}'' already exists."),
+  MAP_VERSION_EXISTS(107, "Duplicate map version", "Map ''{0}'' with crc ''{1}'' already exists."),
   MAP_NAME_CONFLICT(108, "Name clash", "Another map with file name ''{0}'' already exists."),
   MAP_NAME_MISSING(109, "Missing map name", "The scenario file must specify a map name."),
   MAP_DESCRIPTION_MISSING(110, "Missing description", "The scenario file must specify a map description."),
@@ -51,6 +51,7 @@ public enum ErrorCode {
   FEATURED_MOD_UNKNOWN(142, "Unknown featured mod", "There is no featured mod with ID ''{0}''."),
   MAP_SCENARIO_LUA_MISSING(143, "Invalid Map File", "Zip file does not contain a *_scenario.lua"),
   MAP_MISSING_MAP_FOLDER_INSIDE_ZIP(144, "No folder inside Zip", "Zip file must contain a folder with all map data"),
+  MAP_MISSING_ARCHIVE_INSIDE_MAP_FOLDER(1144, "Missing archive inside Map Folder", "The map archive must be at location ''{0}''/''{0}'' in the Zip file, but such a file was not found"),
   MAP_FILE_INSIDE_ZIP_MISSING(145, "File is missing", "Cannot find needed file with pattern ''{0}'' inside zip file"),
   INVALID_METADATA(146, "Invalid metadata", "Metadata is not valid: {0}"),
   MAP_RENAME_FAILED(147, "Cannot rename to correct name failed ", "Cannot rename file ''{0}''"),
@@ -101,8 +102,15 @@ public enum ErrorCode {
   INVALID_FEATURED_MOD(191, "Invalid featured mod name", "The featured mod name ''{0}'' is not allowed in this context."),
   API_KEY_INVALID(192, "Api key is invalid", "The api key is invalid."),
   UNKNOWN_STEAM_ID(193, "Unable to resolve steam id", "The Steam ID ''{0}'' does not match any account."),
-  RECAPTCHA_VALIDATION_FAILED(194, "Recaptcha validation failed", "The response code from the recaptcha did not pass the verification.");
-
+  MAP_DETAIL_MISSING_KEY(194, "Missing Map Detail", "The Map ''{0}'' is missing detail ''{1}''."),
+  MAP_DETAIL_BAD_KEY(195, "Bad Map Detail", "Map ''{0}'' has invalid ''{1}''=''{2}''. Please ensure that {3}"),
+  MAP_DETAIL_EMPTY(196, "Missing Map Details", "There are no map details attached to the archive"),
+  MAP_DETAIL_ARCHIVE_NAME_MISMATCH(197, "Bad Archive Name", "The details for Map ''{0}'' indicate contained in archive ''{1}''.  However uploaded archive name is ''{2}''"),
+  SERVER_DISK_FULL(198, "Server Disk Full", "You guys have uploaded too much stuff server is bulging at the seams!"),
+  MAP_ARCHIVE_OFFICIAL(199, "Upload Not Permitted", "Uploading official Cavedog map(s) ''{0}'' is not permitted!"),
+  MAP_MISSING_PREVIEW(200, "Missing Map Preview", "Missing map preview ''{0}'' (and {1} other missing previews too)"),
+  RECAPTCHA_VALIDATION_FAILED(201, "Recaptcha validation failed", "The response code from the recaptcha did not pass the verification.")
+  ;
 
   private final int code;
   private final String title;

@@ -6,6 +6,7 @@ import com.faforever.api.error.ApiException;
 import com.faforever.api.error.Error;
 import com.faforever.api.error.ErrorCode;
 import com.faforever.api.player.PlayerService;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Files;
@@ -23,7 +24,12 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
@@ -67,7 +73,7 @@ public class MapsController {
     produces = APPLICATION_JSON_UTF8_VALUE
   )
   public void validateScenarioLua(@RequestParam(name = "scenarioLua") String scenarioLua) {
-    mapService.validateScenarioLua(scenarioLua);
+    //mapService.validateScenarioLua(scenarioLua);
   }
 
   @ApiOperation("Upload a map")
@@ -89,15 +95,30 @@ public class MapsController {
     }
 
     boolean ranked;
+    List<Map<String,String>> mapsDetails = new ArrayList<>();
     try {
       JsonNode node = objectMapper.readTree(jsonString);
       ranked = node.path("isRanked").asBoolean(false);
+      JsonNode _mapsDetails = node.path("mapDetails");
+      if (!_mapsDetails.isArray()) {
+        throw new ApiException(new Error(ErrorCode.INVALID_METADATA, "metadata mapDetails must be an array"));
+      }
+      for (JsonNode _mapDetails: _mapsDetails) {
+        Map<String,String> mapDetails = new HashMap<>();
+        Iterator<Entry<String,JsonNode>> it = _mapDetails.fields();
+        while (it.hasNext()) {
+          Entry<String,JsonNode> entry = it.next();
+          mapDetails.put(entry.getKey(), entry.getValue().asText());
+          log.info("mapDetail '{}'='{}'", entry.getKey(), entry.getValue().asText());
+        }
+        mapsDetails.add(mapDetails);
+      }
     } catch (IOException e) {
       log.debug("Could not parse metadata", e);
       throw new ApiException(new Error(ErrorCode.INVALID_METADATA, e.getMessage()));
     }
 
     Player player = playerService.getPlayer(authentication);
-    mapService.uploadMap(file.getInputStream(), file.getOriginalFilename(), player, ranked);
+    mapService.uploadMap(file.getInputStream(), player, ranked, mapsDetails);
   }
 }
