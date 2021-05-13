@@ -124,6 +124,18 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
 
   @Transient
   @ComputedAttribute
+  public String getThumbnailUrlLarge() {
+    return thumbnailUrl;
+  }
+
+  @Transient
+  @ComputedAttribute
+  public String getThumbnailUrlSmall() {
+    return thumbnailUrl;
+  }
+
+  @Transient
+  @ComputedAttribute
   public String getDownloadUrl() {
     return downloadUrl;
   }
