@@ -9,6 +9,8 @@ faf-api:
     directory-preview-path: ${MAP_PREVIEW_PATH}
     previews-url-format: ${MAP_PREVIEWS_URL_FORMAT}
     download-url-format: ${MAP_DOWNLOAD_URL_FORMAT}
+  game-logs:
+    target-directory: ${GAME_LOGS_UPLOAD_PATH}
   mod:
     download-url-format: ${MOD_DOWNLOAD_URL_FORMAT}
     preview-url-format: ${MOD_PREVIEW_URL_FORMAT}

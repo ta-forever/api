@@ -10,6 +10,8 @@ faf-api:
     directory-preview-path: ${MAP_PREVIEW_PATH:build/cache/map_previews/mini}
     previews-url-format: ${MAP_PREVIEWS_URL_FORMAT:http://test.content.faforever.com/faf/vault/map_previews/mini/%s}
     download-url-format: ${MAP_DOWNLOAD_URL_FORMAT:http://test.content.faforever.com/faf/vault/maps/%s}
+  game-logs:
+    target-directory: ${GAME_LOGS_UPLOAD_PATH:build/cache/game_logs}
   mod:
     download-url-format: ${MOD_DOWNLOAD_URL_FORMAT:http://test.content.faforever.com/faf/vault/mods/%s}
     preview-url-format: ${MOD_PREVIEW_URL_FORMAT:http://test.content.faforever.com/faf/vault/mods/%s}

@@ -32,11 +32,11 @@ public class SwaggerConfig {
 
   private ApiInfo apiInfo() {
     return new ApiInfoBuilder()
-      .title("Forged Alliance Forever API")
-      .description("The official API for Forged Alliance Forever")
-      .contact(new Contact("Downlord", "https://github.com/FAForever/faf-java-api", "downlord@faforever.com"))
+      .title("Total Annihilation Forever API")
+      .description("The official API for Total Annihilation Forever")
+      .contact(new Contact("Axle1975", "https://github.com/ta-forever/api", "loweam@gmail.com"))
       .license("MIT")
-      .licenseUrl("https://github.com/FAForever/faf-java-api/blob/develop/LICENSE")
+      .licenseUrl("https://github.com/ta-forever/api/blob/develop/LICENSE")
       .version(fafApiProperties.getVersion())
       .build();
   }
@@ -49,6 +49,7 @@ public class SwaggerConfig {
       .or(regex("/achievements/.*"))
       .or(regex("/avatars/.*"))
       .or(regex("/events/.*"))
+      .or(regex("/game/.*"))
       .or(regex("/users/.*"))
       .or(regex("/mods/.*"))
       .or(regex("/maps/.*"))

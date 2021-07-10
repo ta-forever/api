@@ -19,6 +19,7 @@ public class FafApiProperties {
   private OAuth2 oAuth2 = new OAuth2();
   private Async async = new Async();
   private Map map = new Map();
+  private GameLogs gameLogs = new GameLogs();
   private Mod mod = new Mod();
   private Replay replay = new Replay();
   private Avatar avatar = new Avatar();
@@ -91,6 +92,18 @@ public class FafApiProperties {
      * Allowed file extensions of uploaded maps.
      */
     private Set<String> allowedExtensions = Set.of("zip", "tar");
+  }
+
+  @Data
+  public static class GameLogs {
+    /**
+     * Allowed file extensions of uploaded logs.
+     */
+    private Set<String> allowedExtensions = Set.of("zip");
+    /**
+     * The directory in which uploaded game logs are stored.
+     */
+    private Path targetDirectory = Paths.get("static/game_logs");
   }
 
   @Data
