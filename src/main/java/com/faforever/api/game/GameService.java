@@ -39,7 +39,7 @@ public class GameService {
     }
 
     sb.append(replayId);
-    sb.append(".fafreplay");
+    sb.append(".zip");
 
     return String.format(fafApiProperties.getReplay().getDownloadUrlFormat(), sb.toString());
   }
