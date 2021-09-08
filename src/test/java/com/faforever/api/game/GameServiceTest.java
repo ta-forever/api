@@ -38,12 +38,12 @@ class GameServiceTest {
 
   @ParameterizedTest
   @CsvSource({
-    "1,http://localhost/replays/0/0/0/0/1.fafreplay",
-    "99,http://localhost/replays/0/0/0/0/99.fafreplay",
-    "199,http://localhost/replays/0/0/0/1/199.fafreplay",
-    "9999,http://localhost/replays/0/0/0/99/9999.fafreplay",
-    "5050501,http://localhost/replays/0/5/5/5/5050501.fafreplay",
-    "11689995,http://localhost/replays/0/11/68/99/11689995.fafreplay",
+    "1,http://localhost/replays/0/0/0/0/1.zip",
+    "99,http://localhost/replays/0/0/0/0/99.zip",
+    "199,http://localhost/replays/0/0/0/1/199.zip",
+    "9999,http://localhost/replays/0/0/0/99/9999.zip",
+    "5050501,http://localhost/replays/0/5/5/5/5050501.zip",
+    "11689995,http://localhost/replays/0/11/68/99/11689995.zip",
   })
   void getReplayDownloadUrl(int replayId, String expectedUrl) {
     when(properties.getReplay()).thenReturn(replay);
