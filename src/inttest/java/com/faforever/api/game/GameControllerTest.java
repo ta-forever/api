@@ -12,6 +12,6 @@ public class GameControllerTest extends AbstractIntegrationTest {
   public void testDownloadRedirect() throws Exception {
     this.mockMvc.perform(get("/game/11689995/replay")
     ).andExpect(status().isFound())
-      .andExpect(redirectedUrl("http://localhost/replays/0/11/68/99/11689995.fafreplay"));
+      .andExpect(redirectedUrl("http://localhost/replays/0/11/68/99/11689995.zip"));
   }
 }
