@@ -13,6 +13,7 @@ DELETE FROM `faction`;
 DELETE FROM `featured_mods_owners`;
 DELETE FROM `friends_and_foes`;
 DELETE FROM `game_featuredMods`;
+DELETE FROM `game_featuredMods_version`;
 DELETE FROM `game_player_stats`;
 DELETE FROM `game_review`;
 DELETE FROM `game_reviews_summary`;
