@@ -25,6 +25,9 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
   private int wonGames;
   private Leaderboard leaderboard;
   private Player player;
+  private int streak;
+  private String recentScores;
+  private String recentMod;
 
   @ManyToOne
   @JoinColumn(name = "login_id")
@@ -62,6 +65,16 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
   public double getRating() {
     return rating;
   }
+
+  @Column(name = "streak")
+  public int getStreak() { return streak; }
+
+  @Column(name = "recent_scores")
+  // 0=loss, 1=draw, 2=win.  most recent first
+  public String getRecentScores() { return recentScores; }
+
+  @Column(name = "recent_mod")
+  public String getRecentMod() { return recentMod; }
 
   @Override
   @Transient
