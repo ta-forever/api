@@ -1,19 +1,7 @@
 package com.faforever.api.config;
 
 import com.faforever.api.config.elide.ElideConfig;
-import com.faforever.api.data.domain.Achievement;
-import com.faforever.api.data.domain.Avatar;
-import com.faforever.api.data.domain.AvatarAssignment;
-import com.faforever.api.data.domain.Clan;
-import com.faforever.api.data.domain.Event;
-import com.faforever.api.data.domain.FeaturedMod;
-import com.faforever.api.data.domain.Leaderboard;
-import com.faforever.api.data.domain.LeaderboardRating;
-import com.faforever.api.data.domain.Map;
-import com.faforever.api.data.domain.MapStatistics;
-import com.faforever.api.data.domain.MapVersion;
-import com.faforever.api.data.domain.Mod;
-import com.faforever.api.data.domain.ModVersion;
+import com.faforever.api.data.domain.*;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -57,6 +45,7 @@ public class CacheConfig {
       new CaffeineCache(Clan.TYPE_NAME, newBuilder().expireAfterWrite(5, MINUTES).build()),
       new CaffeineCache(Event.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(FeaturedMod.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
+      new CaffeineCache(FeaturedModVersion.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(Map.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(MapVersion.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(MapStatistics.TYPE_NAME, newBuilder().expireAfterWrite(1, MINUTES).build()),

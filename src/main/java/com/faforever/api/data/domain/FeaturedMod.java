@@ -2,11 +2,13 @@ package com.faforever.api.data.domain;
 
 import com.yahoo.elide.annotation.Include;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "game_featuredMods")
@@ -26,6 +28,7 @@ public class FeaturedMod {
   private Boolean allowOverride;
   private String fileExtension;
   private String deploymentWebhook;
+  private List<FeaturedModVersion> versions = new ArrayList<>();
 
   @Id
   @Column(name = "id")
@@ -81,5 +84,13 @@ public class FeaturedMod {
   @Column(name = "deployment_webhook ")
   public String getDeploymentWebhook() {
     return deploymentWebhook;
+  }
+
+  @OneToMany(mappedBy = "featuredMod", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @NotEmpty
+  @Valid
+  @BatchSize(size = 1000)
+  public List<FeaturedModVersion> getVersions() {
+    return versions;
   }
 }
