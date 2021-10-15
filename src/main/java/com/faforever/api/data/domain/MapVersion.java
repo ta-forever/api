@@ -44,6 +44,7 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
   private String archiveName; // "archive.ufo"
   private String name;        // "Map Name"
   private String crc;         // "deadbeef"
+  private String taHash;      // "effedeff"
   private boolean ranked;
   private boolean hidden;
   private Map map;
@@ -87,6 +88,11 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
   @NotNull
   public String getFilename() {
     return filename;
+  }
+
+  @Column(name = "ta_hash")
+  public String getTaHash() {
+    return taHash;
   }
 
   @UpdatePermission(expression = AdminMapCheck.EXPRESSION + " or (" + IsEntityOwner.EXPRESSION + " and " + BooleanChange.TO_FALSE_EXPRESSION + ")")
