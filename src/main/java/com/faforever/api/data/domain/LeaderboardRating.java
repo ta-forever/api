@@ -23,6 +23,8 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
   private double rating;
   private int totalGames;
   private int wonGames;
+  private int lostGames;
+  private int drawnGames;
   private Leaderboard leaderboard;
   private Player player;
   private int streak;
@@ -49,6 +51,16 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
   @Column(name = "won_games")
   public int getWonGames() {
     return wonGames;
+  }
+
+  @Column(name = "lost_games")
+  public int getLostGames() {
+    return lostGames;
+  }
+
+  @Column(name = "drawn_games")
+  public int getDrawnGames() {
+    return drawnGames;
   }
 
   @Column(name = "mean")
