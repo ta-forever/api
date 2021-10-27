@@ -28,6 +28,7 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
   private Leaderboard leaderboard;
   private Player player;
   private int streak;
+  private int bestStreak;
   private String recentScores;
   private String recentMod;
 
@@ -80,6 +81,9 @@ public class LeaderboardRating extends AbstractEntity implements OwnableEntity {
 
   @Column(name = "streak")
   public int getStreak() { return streak; }
+
+  @Column(name = "best_streak")
+  public int getBestStreak() { return bestStreak; }
 
   @Column(name = "recent_scores")
   // 0=loss, 1=draw, 2=win.  most recent first
