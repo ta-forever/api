@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.ArchiveException;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.util.Pair;
 import org.springframework.http.HttpHeaders;
@@ -147,6 +148,26 @@ public class MapService {
     }
   }
 
+  private String _getNewVersionedArchiveName(String archiveFileName) {
+    String basename = FilenameUtils.getBaseName(archiveFileName);
+    String extension = FilenameUtils.getExtension(archiveFileName);
+    int version = 1;
+
+    Path finalArchiveDestination = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
+    while (Files.exists(finalArchiveDestination)) {
+      ++version;
+      finalArchiveDestination = fafApiProperties.getMap().getTargetDirectory().resolve(
+        String.format("%s.v%04d.%s", basename, version, extension));
+    }
+
+    if (version == 1) {
+      return archiveFileName;
+    }
+    else {
+      return String.format("%s.v%04d.%s", basename, version, extension);
+    }
+  }
+
   @Transactional
   @SneakyThrows
   @CacheEvict(value = {Map.TYPE_NAME, MapVersion.TYPE_NAME}, allEntries = true)
@@ -176,12 +197,6 @@ public class MapService {
       }
       log.info("[uploadMap] archiveFileName=''{}''", archiveFileName);
       validateRequiredFiles(mapFolder, MANDATORY_FILES);
-
-      Path finalArchiveDestination = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
-      log.info("[uploadMap] finalArchiveDestination=''{}''", finalArchiveDestination);
-      if (Files.exists(finalArchiveDestination)) {
-        throw ApiException.of(ErrorCode.MAP_NAME_CONFLICT, finalArchiveDestination);
-      }
 
       validateMapsDetails(mapsDetails);
       java.util.Map<String, Optional<Map>> existingMaps = new HashMap<>();
@@ -214,12 +229,16 @@ public class MapService {
         throw ApiException.of(ErrorCode.MAP_MISSING_PREVIEW, missingPreviewFileNameSet, missingPreviewFileNameSet.size()-1);
       }
 
+      String versionedArchiveName = _getNewVersionedArchiveName(archiveFileName);
+      log.info("[uploadMap] versionedArchiveName=''{}''", versionedArchiveName);
+
       for (java.util.Map<String,String> mapDetails: mapsDetails) {
         String mapName = mapDetails.get("name");
-        updateHibernateMapEntities(mapDetails, existingMaps.get(mapName), author, isRanked);
+        updateHibernateMapEntities(versionedArchiveName, mapDetails, existingMaps.get(mapName), author, isRanked);
       }
 
-      Path finalPath = fafApiProperties.getMap().getTargetDirectory().resolve(archiveFileName);
+      Path finalPath = fafApiProperties.getMap().getTargetDirectory().resolve(versionedArchiveName);
+      log.info("[uploadMap] finalPath=''{}''", finalPath);
       copyMapArchive(mapFolder.resolve(archiveFileName), finalPath);
 
       Path previewPath = fafApiProperties.getMap().getDirectoryPreviewPath();
@@ -387,7 +406,7 @@ public class MapService {
     return maxPlayers >= 2 ? maxPlayers : 10;
   }
 
-  private Map updateHibernateMapEntities(java.util.Map<String,String> mapDetails, Optional<Map> existingMapOptional, Player author, boolean isRanked) {
+  private Map updateHibernateMapEntities(String archiveName, java.util.Map<String,String> mapDetails, Optional<Map> existingMapOptional, Player author, boolean isRanked) {
     // mapDetails is supposed to be validated already
 
     Map map = existingMapOptional
@@ -424,7 +443,7 @@ public class MapService {
       .setRanked(isRanked)
       .setMaxPlayers(getMaxPlayers(mapDetails.getOrDefault("players","10")))
       .setMap(map)
-      .setFilename(String.format("%s/%s/%s", mapDetails.get("archive"), mapDetails.get("name"), mapDetails.get("crc")));
+      .setFilename(String.format("%s/%s/%s", archiveName, mapDetails.get("name"), mapDetails.get("crc")));
 
     // this triggers validation
     mapRepository.save(map);

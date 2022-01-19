@@ -271,16 +271,6 @@ public class MapServiceTest {
     }
 
     @Test
-    void archiveAlreadyExists() throws IOException {
-      when(fafApiProperties.getMap()).thenReturn(mapProperties);
-      Path clashedMap = finalDirectory.resolve("Beta Tropics (Coasts).ufo");
-      assertTrue(clashedMap.toFile().createNewFile());
-
-      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deadbeef", "archive", "Beta Tropics (Coasts).ufo");
-      uploadFails(ErrorCode.MAP_NAME_CONFLICT, "Beta Tropics (Coasts).tar", List.of(mapDetails));
-    }
-
-    @Test
     void notCorrectAuthor() {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
 
@@ -297,7 +287,7 @@ public class MapServiceTest {
     }
 
     @Test
-    void versionExistsAlready() {
+    void versionExistsAlreadyNewArchiveName() {
       when(fafApiProperties.getMap()).thenReturn(mapProperties);
 
       com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
@@ -328,6 +318,41 @@ public class MapServiceTest {
       assertEquals(13, mapCaptor.getValue().getVersions().get(0).getVersion());
       assertEquals("a map", mapCaptor.getValue().getVersions().get(0).getDescription());
       assertEquals("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deadbeef", mapCaptor.getValue().getVersions().get(0).getFilename());
+    }
+
+    @Test
+    void versionExistsAlreadySameArchiveName() throws IOException {
+      when(fafApiProperties.getMap()).thenReturn(mapProperties);
+      Path clashedMap = finalDirectory.resolve("Beta Tropics (Coasts).ufo");
+      assertTrue(clashedMap.toFile().createNewFile());
+
+      com.faforever.api.data.domain.Map map = new com.faforever.api.data.domain.Map()
+        .setDisplayName("Beta Tropics (Coasts)")
+        .setAuthor(author);
+      map.getVersions().add(new MapVersion()
+          .setCrc("deadbeef")
+          .setDescription("some map")
+          .setFilename("Beta Tropics (Coasts).ufo/Beta Tropics (Coasts)/deadbeef")
+          .setHeight(10)
+          .setWidth(10)
+          .setHidden(false)
+          .setMaxPlayers(8)
+          .setName("Beta Tropics (Coasts)")
+          .setRanked(true)
+          .setVersion(13));
+      InputStream mapData = loadMapAsInputSteam("Beta Tropics (Coasts).tar");
+
+      when(mapRepository.findOneByDisplayName(any())).thenReturn(Optional.of(map));
+
+      java.util.Map<String,String> mapDetails = java.util.Map.of("name", "Beta Tropics (Coasts)", "description", "a map", "crc", "deedbeef", "archive", "Beta Tropics (Coasts).ufo");
+      instance.uploadMap(mapData, author, true, List.of(mapDetails));
+
+      ArgumentCaptor<com.faforever.api.data.domain.Map> mapCaptor = ArgumentCaptor.forClass(com.faforever.api.data.domain.Map.class);
+      verify(mapRepository).save(mapCaptor.capture());
+      assertEquals(2, mapCaptor.getValue().getVersions().size());
+      assertEquals(14, mapCaptor.getValue().getVersions().get(1).getVersion());
+      assertEquals("a map", mapCaptor.getValue().getVersions().get(1).getDescription());
+      assertEquals("Beta Tropics (Coasts).v0002.ufo/Beta Tropics (Coasts)/deedbeef", mapCaptor.getValue().getVersions().get(1).getFilename());
     }
 
     @Test
