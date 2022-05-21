@@ -20,6 +20,8 @@ public class FeaturedModVersion {
   private String taHash;  // md5
   private Boolean confirmed;  // set when mod/version/hash combination is a verified fact
   private Integer observationCount; // number of games seen with this mod/version/hash combination
+  private String gitBranch; // A git branch that can reasonably be expected to work with this game
+  private String displayName;
 
   @Id
   @Column(name = "id")
@@ -42,6 +44,12 @@ public class FeaturedModVersion {
 
   @Column(name = "observation_count")
   public Integer getObservationCount() { return observationCount; }
+
+  @Column(name = "git_branch")
+  public String getGitBranch() { return gitBranch; }
+
+  @Column(name = "display_name")
+  public String getDisplayName() { return displayName; }
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "game_featuredMods_id")

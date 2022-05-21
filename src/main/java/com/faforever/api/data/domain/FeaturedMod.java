@@ -25,9 +25,11 @@ public class FeaturedMod {
   private int order;
   private String gitUrl;
   private String gitBranch;
+  private String installPackage;
   private Boolean allowOverride;
   private String fileExtension;
   private String deploymentWebhook;
+  private String website;
   private List<FeaturedModVersion> versions = new ArrayList<>();
 
   @Id
@@ -71,6 +73,11 @@ public class FeaturedMod {
     return gitBranch;
   }
 
+  @Column(name = "install_package")
+  public String getInstallPackage() {
+    return installPackage;
+  }
+
   @Column(name = "allow_override")
   public Boolean isAllowOverride() {
     return allowOverride;
@@ -81,13 +88,18 @@ public class FeaturedMod {
     return fileExtension;
   }
 
-  @Column(name = "deployment_webhook ")
+  @Column(name = "deployment_webhook")
   public String getDeploymentWebhook() {
     return deploymentWebhook;
   }
 
+  @Column(name = "website")
+  public String getWebsite() {
+    return website;
+  }
+
   @OneToMany(mappedBy = "featuredMod", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-  @NotEmpty
+  //@NotEmpty
   @Valid
   @BatchSize(size = 1000)
   public List<FeaturedModVersion> getVersions() {

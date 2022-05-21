@@ -53,6 +53,7 @@ public class Game {
   private GameReviewsSummary reviewsSummary;
   private Boolean replayAvailable;
   private Boolean tadaAvailable;
+  private String replayMeta;
 
   @Id
   @Column(name = "id")
@@ -148,6 +149,8 @@ public class Game {
     return tadaAvailable;
   }
 
+  @Column(name = "replay_meta")
+  public String replayMeta() { return replayMeta; }
 
   /**
    * This ManyToOne relationship leads to a double left outer join through Elide causing an additional full table
