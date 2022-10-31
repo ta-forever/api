@@ -249,7 +249,7 @@ public class MapService {
           .filter(p -> Files.isRegularFile(p[0]) && mapPreviewFileNameSet.contains(p[1]))
           .forEach(p -> {
             try {  Files.copy(p[0], previewPath.resolve(p[1])); }
-            catch (IOException e) { log.warn("unable to copy '{0}' to '{1}'", p[0], p[1]); }
+            catch (IOException e) { log.warn("unable to copy ''{0}'' to ''{1}''", p[0], p[1]); }
           });
       }
 
