@@ -150,7 +150,7 @@ public class Game {
   }
 
   @Column(name = "replay_meta")
-  public String replayMeta() { return replayMeta; }
+  public String getReplayMeta() { return replayMeta; }
 
   /**
    * This ManyToOne relationship leads to a double left outer join through Elide causing an additional full table
