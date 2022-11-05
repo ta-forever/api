@@ -54,6 +54,7 @@ public class Game {
   private Boolean replayAvailable;
   private Boolean tadaAvailable;
   private String replayMeta;
+  private Boolean replayHidden;
 
   @Id
   @Column(name = "id")
@@ -151,6 +152,9 @@ public class Game {
 
   @Column(name = "replay_meta")
   public String getReplayMeta() { return replayMeta; }
+
+  @Column(name = "replay_hidden")
+  public Boolean getReplayHidden() { return replayHidden; }
 
   /**
    * This ManyToOne relationship leads to a double left outer join through Elide causing an additional full table
