@@ -1,14 +1,12 @@
 package com.faforever.api.data.domain;
 
-import com.faforever.api.data.checks.Prefab;
+import com.faforever.api.data.checks.*;
 import com.faforever.api.data.converter.VictoryConditionConverter;
 import com.faforever.api.data.listeners.GameEnricher;
-import com.yahoo.elide.annotation.ComputedAttribute;
-import com.yahoo.elide.annotation.Include;
-import com.yahoo.elide.annotation.UpdatePermission;
+import com.faforever.api.security.elide.permission.AdminMapCheck;
+import com.yahoo.elide.annotation.*;
 import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.Immutable;
 import org.jetbrains.annotations.Nullable;
 
 import javax.persistence.Column;
@@ -32,9 +30,9 @@ import java.util.Set;
 @Entity
 @Table(name = "game_stats")
 @Include(rootLevel = true, type = "game")
-@Immutable
 @Setter
 @EntityListeners(GameEnricher.class)
+@ReadPermission(expression = "not " + IsGameHidden.EXPRESSION + " or " + IsGameParticipatedByCaller.EXPRESSION)
 public class Game {
 
   private int id;
@@ -153,6 +151,8 @@ public class Game {
   @Column(name = "replay_meta")
   public String getReplayMeta() { return replayMeta; }
 
+  @UpdatePermission(expression = AdminMapCheck.EXPRESSION + " or (" + IsGameHostedByCaller.EXPRESSION + " and " + BooleanChange.TO_FALSE_EXPRESSION + ")")
+  @Audit(action = Audit.Action.UPDATE, logStatement = "Updated game_stats for `{0}` attribute replay_hidden to: {1}", logExpressions = {"${game.id}", "${game.replayHidden}"})
   @Column(name = "replay_hidden")
   public Boolean getReplayHidden() { return replayHidden; }
 
