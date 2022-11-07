@@ -3,6 +3,7 @@ package com.faforever.api.data;
 import com.faforever.api.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithAnonymousUser;
+import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 
@@ -19,7 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class GameElideTest extends AbstractIntegrationTest {
 
   @Test
-  @WithAnonymousUser
+  @WithUserDetails(AUTH_USER)
   public void filterExistingGameByVictoryCondition() throws Exception {
     mockMvc.perform(
       get("/data/game")
@@ -32,7 +33,7 @@ public class GameElideTest extends AbstractIntegrationTest {
   }
 
   @Test
-  @WithAnonymousUser
+  @WithUserDetails(AUTH_USER)
   public void filterNonExistingGameByVictoryCondition() throws Exception {
     mockMvc.perform(
       get("/data/game")
