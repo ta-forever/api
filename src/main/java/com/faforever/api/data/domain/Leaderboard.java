@@ -36,7 +36,7 @@ public class Leaderboard extends AbstractEntity {
   }
 
   @Column(name = "leaderboard_hidden")
-  public String getLeaderboardHidden() {
+  public Boolean getLeaderboardHidden() {
     return leaderboardHidden;
   }
 }
