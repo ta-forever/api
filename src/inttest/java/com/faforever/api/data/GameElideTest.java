@@ -33,7 +33,7 @@ public class GameElideTest extends AbstractIntegrationTest {
   }
 
   @Test
-  @WithUserDetails(AUTH_USER)
+  @WithAnonymousUser
   public void filterNonExistingGameByVictoryCondition() throws Exception {
     mockMvc.perform(
       get("/data/game")
