@@ -61,7 +61,7 @@ public class GameService {
     log.info("[uploadGameLogs] destination={}", destination);
     log.info("[uploadGameLogs] free space={} GB; logs size={} kB", (int)(freeSpace/1e9), (int)(logFileSize/1e3));
 
-    final long MAX_LOG_FILE_SIZE = 100000;
+    final long MAX_LOG_FILE_SIZE = 1000000;
     if (logFileSize*10 >= freeSpace) {
       throw ApiException.of(ErrorCode.SERVER_DISK_FULL);
     }
