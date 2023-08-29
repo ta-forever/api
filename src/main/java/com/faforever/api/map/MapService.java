@@ -41,6 +41,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -248,8 +249,8 @@ public class MapService {
           .map(p -> new Path[] {p, Paths.get(URLDecoder.decode(p.getFileName().toString(), StandardCharsets.ISO_8859_1))})
           .filter(p -> Files.isRegularFile(p[0]) && mapPreviewFileNameSet.contains(p[1]))
           .forEach(p -> {
-            try {  Files.copy(p[0], previewPath.resolve(p[1])); }
-            catch (IOException e) { log.warn("unable to copy ''{0}'' to ''{1}''", p[0], p[1]); }
+            try {  Files.copy(p[0], previewPath.resolve(p[1]), StandardCopyOption.REPLACE_EXISTING); }
+            catch (IOException e) { log.warn("unable to copy '{}' to '{}'", p[0], p[1]); }
           });
       }
 
