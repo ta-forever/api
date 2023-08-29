@@ -29,7 +29,7 @@ public class IsGameParticipatedByCaller {
     @Override
     public FilterExpression getFilterExpression(Type<?> type, RequestScope requestScope) {
       final ElideUser caller = (ElideUser) requestScope.getUser();
-      final Integer callerId = caller.getFafUserDetails().map(FafUserDetails::getId).orElse(null);
+      final Integer callerId = caller.getFafUserDetails().map(FafUserDetails::getId).orElse(0);
       final Path.PathElement playerStatsPath = new Path.PathElement(Game.class, GamePlayerStats.class, "playerStats");
       final Path.PathElement playerPath = new Path.PathElement(GamePlayerStats.class, Player.class, "player");
       final Path.PathElement idPath = new Path.PathElement(Player.class, Integer.class, "id");

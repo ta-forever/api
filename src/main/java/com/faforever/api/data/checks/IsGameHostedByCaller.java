@@ -29,7 +29,7 @@ public class IsGameHostedByCaller {
     @Override
     public FilterExpression getFilterExpression(Type<?> type, RequestScope requestScope) {
       final ElideUser caller = (ElideUser) requestScope.getUser();
-      final Integer callerId = caller.getFafUserDetails().map(FafUserDetails::getId).orElse(null);
+      final Integer callerId = caller.getFafUserDetails().map(FafUserDetails::getId).orElse(0);
 
       final Path.PathElement hostPath = new Path.PathElement(Game.class, Player.class, "host");
       final Path.PathElement loginIdPath = new Path.PathElement(Player.class, Integer.class, "id");
