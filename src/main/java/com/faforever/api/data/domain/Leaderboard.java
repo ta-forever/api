@@ -18,6 +18,7 @@ public class Leaderboard extends AbstractEntity {
   private String technicalName;
   private String nameKey;
   private String descriptionKey;
+  private Boolean leaderboardHidden;
 
   @Column(name = "technical_name")
   public String getTechnicalName() {
@@ -32,5 +33,10 @@ public class Leaderboard extends AbstractEntity {
   @Column(name = "description_key")
   public String getDescriptionKey() {
     return descriptionKey;
+  }
+
+  @Column(name = "leaderboard_hidden")
+  public String getLeaderboardHidden() {
+    return leaderboardHidden;
   }
 }
