@@ -25,6 +25,8 @@ public class MatchmakerQueue extends AbstractEntity {
   private String nameKey;
   private FeaturedMod featuredMod;
   private Leaderboard leaderboard;
+  private int teamSize;
+  private boolean enabled;
 
   @Column(name = "technical_name")
   @NotNull
@@ -40,6 +42,20 @@ public class MatchmakerQueue extends AbstractEntity {
     return nameKey;
   }
 
+  @Column(name = "team_size")
+  @NotNull
+  @UpdatePermission(expression = IsEntityOwner.EXPRESSION)
+  public int getTeamSize() {
+    return teamSize;
+  }
+
+  @Column(name = "enabled")
+  @NotNull
+  @UpdatePermission(expression = IsEntityOwner.EXPRESSION)
+  public boolean getEnabled() {
+    return enabled;
+  }
+
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "featured_mod_id")
   public FeaturedMod getFeaturedMod() {
@@ -51,5 +67,4 @@ public class MatchmakerQueue extends AbstractEntity {
   public Leaderboard getLeaderboard() {
     return leaderboard;
   }
-
 }
