@@ -1,12 +1,12 @@
 name: Build
 on: [ push, pull_request ]
 env:
-  FLYWAY_VERSION: 7.5.4
-  FAF_DB_VERSION: v120-taf
+  FLYWAY_VERSION: 10.18.0
+  FAF_DB_VERSION: v122-taf
 jobs:
   test:
     runs-on: ubuntu-latest
-    container: adoptopenjdk:15-jdk-hotspot-bionic
+    container: eclipse-temurin:19.0.2_7-jdk-jammy
     services:
       faf-db:
         image: mysql:5.7
@@ -26,7 +26,7 @@ jobs:
       - name: Install tools
         run: apt update && apt install -y git wget
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Run flyway db migrations
         env:
           FLYWAY_URL: jdbc:mysql://faf-db/faf?useSSL=false

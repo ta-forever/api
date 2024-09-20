@@ -28,6 +28,7 @@ public class FeaturedMod {
   private String installPackage;
   private Boolean allowOverride;
   private String fileExtension;
+  private String gp3Filename;
   private String deploymentWebhook;
   private String website;
   private List<FeaturedModVersion> versions = new ArrayList<>();
@@ -86,6 +87,11 @@ public class FeaturedMod {
   @Column(name = "file_extension")
   public String getFileExtension() {
     return fileExtension;
+  }
+
+  @Column(name = "gp3_filename")
+  public String getGp3Filename() {
+    return gp3Filename;
   }
 
   @Column(name = "deployment_webhook")

@@ -1,10 +1,10 @@
-FROM adoptopenjdk/openjdk15:alpine-jre as builder
+FROM eclipse-temurin:19.0.2_7-jre-jammy as builder
 WORKDIR /application
 ARG JAR_FILE=build/libs/faf-java-api-*.jar
 COPY ${JAR_FILE} application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 
-FROM adoptopenjdk/openjdk15:alpine-jre
+FROM eclipse-temurin:19.0.2_7-jre-jammy
 VOLUME /tmp
 WORKDIR /application
 COPY --from=builder /application/dependencies/ ./

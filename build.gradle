@@ -128,6 +128,9 @@ processResources {
       it.replace('#faf-api.version#', project.version.toString())
     }
   }
+  tasks.withType(Copy) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  }
 }
 
 sourceSets {
@@ -199,9 +202,9 @@ test {
 }
 
 dependencies {
-  implementation("org.projectlombok:lombok")
-  annotationProcessor("org.projectlombok:lombok")
-  testAnnotationProcessor("org.projectlombok:lombok")
+  implementation("org.projectlombok:lombok:1.18.34")
+  annotationProcessor("org.projectlombok:lombok:1.18.34")
+  testAnnotationProcessor("org.projectlombok:lombok:1.18.34")
   annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
   testAnnotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 
