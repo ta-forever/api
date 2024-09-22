@@ -1,17 +1,17 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
-  <title>FAForever Login</title>
+  <title>TAForever Login</title>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
   <link href="https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz" rel="stylesheet" type="text/css">
-  <link href="https://faforever.com/styles/css/site.min.css" rel="stylesheet" type="text/css" />
+  <link href="https://taforever.com/styles/css/site.min.css" rel="stylesheet" type="text/css" />
   <link rel="stylesheet" th:href="@{/css/style.css}" type="text/css"/>
 </head>
 <body>
 <div class="background hero"></div>
 <div class="card login-card">
-  <h1>FAForever Login</h1>
+  <h1>TAForever Login</h1>
 
   <form name="f" th:action="@{/login}" class="form-group" method="post">
     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" th:if="${_csrf != null }"/>
@@ -33,7 +33,7 @@
   </form>
 
   <div class="footer-links">
-    <a href="https://www.faforever.com/account/password/reset">Forgot Password</a>
+    <a href="https://www.taforever.com/account/password/reset">Forgot Password</a>
   </div>
 </div>
 </body>

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.Serializable;
+import java.util.Enumeration;
 import java.util.Map;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -32,6 +34,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @RestController
 @RequestMapping(path = "/users")
 @RequiredArgsConstructor
+@Slf4j
 public class UsersController {
   private final FafApiProperties fafApiProperties;
   private final UserService userService;
@@ -49,6 +52,14 @@ public class UsersController {
       throw new ApiException(new Error(ErrorCode.ALREADY_REGISTERED));
     }
 
+    Enumeration<String> parameterNames = request.getParameterNames();
+    while (parameterNames.hasMoreElements()) {
+      String paramName = parameterNames.nextElement();
+      String paramValue = request.getParameter(paramName);
+      log.debug("Request Parameter - {}: {}", paramName, paramValue);
+    }
+
+    log.debug("username={}, email={}, recaptchaResponse={}", username, email, recaptchaResponse);
     recaptchaService.validateResponse(recaptchaResponse);
     userService.register(username, email);
   }
