@@ -60,6 +60,12 @@ spring:
     port: ${MAIL_PORT:false}
     username: ${MAIL_USERNAME:false}
     password: ${MAIL_PASSWORD:false}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_ENABLE_AUTH:false}
+          starttls:
+            enable: ${MAIL_ENABLE_START_TLS:false}
   data:
     jpa:
       repositories:
