@@ -1,7 +1,9 @@
 package com.faforever.api.game;
 
 import com.faforever.api.config.FafApiProperties;
+import com.faforever.api.data.domain.GameLaunchVerification;
 import com.faforever.api.data.domain.Player;
+import com.faforever.api.game.GameLaunchVerificationRepository;
 import com.faforever.api.error.ApiException;
 import com.faforever.api.error.Error;
 import com.faforever.api.error.ErrorCode;
@@ -36,6 +38,7 @@ public class GameController {
   private final PlayerService playerService;
   private final FafApiProperties fafApiProperties;
   private final ObjectMapper objectMapper;
+  private final GameLaunchVerificationRepository gameLaunchVerificationRepository;
 
   @GetMapping("/{id}/replay")
   public void downloadReplay(HttpServletResponse httpServletResponse,
@@ -75,5 +78,24 @@ public class GameController {
 
     Player player = playerService.getPlayer(authentication);
     gameService.uploadGameLogs(file.getInputStream(), player, context, id);
+  }
+
+  @ApiOperation("Submit game launch verification codes")
+  @ApiResponses(value = {
+    @ApiResponse(code = 200, message = "Success"),
+    @ApiResponse(code = 401, message = "Unauthorized"),
+    @ApiResponse(code = 500, message = "Failure")})
+  @RequestMapping(path = "/launch_codes", method = RequestMethod.POST, produces = APPLICATION_JSON_UTF8_VALUE)
+  public void uploadLaunchCodes(@RequestParam("gameId") int gameId,
+                                @RequestParam("data") String data,
+                                Authentication authentication) throws IOException {
+    int loginId = playerService.getPlayer(authentication).getId();
+
+    GameLaunchVerification entity = new GameLaunchVerification();
+    entity.setGameId(gameId);
+    entity.setLoginId(loginId);
+    entity.setData(data);
+
+    gameLaunchVerificationRepository.save(entity);
   }
 }
