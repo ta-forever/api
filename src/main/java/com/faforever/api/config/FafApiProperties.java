@@ -41,6 +41,7 @@ public class FafApiProperties {
   private Nodebb nodebb = new Nodebb();
   private Recaptcha recaptcha = new Recaptcha();
 
+
   @Data
   public static class OAuth2 {
     private String resourceId = "faf-api";
@@ -123,6 +124,7 @@ public class FafApiProperties {
   @Data
   public static class Replay {
     private String downloadUrlFormat;
+    private int newestCutoffDays = 100;
   }
 
   @Data
@@ -268,4 +270,5 @@ public class FafApiProperties {
     private boolean enabled;
     private String secret;
   }
+
 }

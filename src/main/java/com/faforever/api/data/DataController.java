@@ -1,9 +1,11 @@
 package com.faforever.api.data;
 
+import com.faforever.api.config.FafApiProperties;
 import com.faforever.api.security.ElideUser;
 import com.yahoo.elide.Elide;
 import com.yahoo.elide.ElideResponse;
 import com.yahoo.elide.core.security.User;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.http.MediaType;
@@ -23,6 +25,8 @@ import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import javax.ws.rs.core.MultivaluedHashMap;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -36,6 +40,7 @@ import static com.faforever.api.data.JsonApiMediaType.JSON_API_PATCH_MEDIA_TYPE;
  */
 @RestController
 @RequestMapping(path = DataController.PATH_PREFIX)
+@Slf4j
 public class DataController {
 
   public static final String PATH_PREFIX = "/data";
@@ -43,8 +48,11 @@ public class DataController {
 
   private final Elide elide;
 
-  public DataController(Elide elide) {
+  private final FafApiProperties properties;
+
+  public DataController(Elide elide, FafApiProperties properties) {
     this.elide = elide;
+    this.properties = properties;
   }
 
   private static User getPrincipal(final Authentication authentication) {
@@ -57,10 +65,32 @@ public class DataController {
   public ResponseEntity<String> get(@RequestParam final Map<String, String> allRequestParams,
                                     final HttpServletRequest request,
                                     final Authentication authentication) {
+    MultivaluedHashMap<String, String> params = new MultivaluedHashMap<>(allRequestParams);
+
+    String entityPath = getJsonApiPath(request);
+    int newestReplayCutoffDays = properties.getReplay().getNewestCutoffDays();
+    String existingFilter = params.getFirst("filter");
+    log.info("[get] entityPath={} existingFilter={}, newestReplayCutoffDays={}", entityPath, existingFilter, newestReplayCutoffDays);
+    if (entityPath.equals("/game") && (existingFilter == null || existingFilter.equals("endTime=isnull=false"))) {
+      String cutoff = Instant.now()
+        .minus(newestReplayCutoffDays, ChronoUnit.DAYS)
+        .truncatedTo(ChronoUnit.DAYS)
+        .toString();
+
+      String enforcedFilter = "endTime=ge=" + cutoff;
+      log.info("[get] enforcedFilter={}", enforcedFilter);
+
+      if (existingFilter != null) {
+        params.putSingle("filter", "(" + existingFilter + ");(" + enforcedFilter + ")");
+      } else {
+        params.putSingle("filter", enforcedFilter);
+      }
+    }
+
     ElideResponse response = elide.get(
       getBaseUrlEndpoint(),
-      getJsonApiPath(request),
-      new MultivaluedHashMap<>(allRequestParams),
+      entityPath,
+      params,
       getPrincipal(authentication),
       API_VERSION
     );

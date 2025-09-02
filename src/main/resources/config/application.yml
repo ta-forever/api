@@ -27,6 +27,8 @@ faf-api:
     base-url: ${NODEBB_BASE_URL:false}
     admin-user-id: ${NODEBB_ADMIN_USERID:1}
     master-token: ${NODEBB_MASTER_TOKEN:false}
+  replay:
+    newest-cutoff-days: ${REPLAY_NEWEST_CUTOFF_DAYS:100}
 
 spring:
   application:
