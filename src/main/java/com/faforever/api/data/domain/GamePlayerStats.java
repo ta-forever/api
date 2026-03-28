@@ -14,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.Set;
@@ -41,6 +42,7 @@ public class GamePlayerStats {
   private Game game;
   private GameOutcome result;
   private Set<LeaderboardRatingJournal> ratingChanges;
+  private GwGamePlayerStats gwGamePlayerStats;
 
   @Id
   @Column(name = "id")
@@ -129,5 +131,10 @@ public class GamePlayerStats {
   @BatchSize(size = 1000)
   public Set<LeaderboardRatingJournal> getRatingChanges() {
     return ratingChanges;
+  }
+
+  @OneToOne(mappedBy = "gamePlayerStats", fetch = FetchType.LAZY)
+  public GwGamePlayerStats getGwGamePlayerStats() {
+    return gwGamePlayerStats;
   }
 }

@@ -53,6 +53,7 @@ public class Game {
   private Boolean tadaAvailable;
   private String replayMeta;
   private Boolean replayHidden;
+  private GwGameStats gwGameStats;
 
   @Id
   @Column(name = "id")
@@ -155,6 +156,11 @@ public class Game {
   @Audit(action = Audit.Action.UPDATE, logStatement = "Updated game_stats for `{0}` attribute replay_hidden to: {1}", logExpressions = {"${game.id}", "${game.replayHidden}"})
   @Column(name = "replay_hidden")
   public Boolean getReplayHidden() { return replayHidden; }
+
+  @OneToOne(mappedBy = "game", fetch = FetchType.LAZY)
+  public GwGameStats getGwGameStats() {
+    return gwGameStats;
+  }
 
   /**
    * This ManyToOne relationship leads to a double left outer join through Elide causing an additional full table
