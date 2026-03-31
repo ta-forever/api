@@ -166,12 +166,14 @@ public class MapVersion extends AbstractEntity implements OwnableEntity {
 
   @OneToMany(mappedBy = "mapVersion")
   @UpdatePermission(expression = Prefab.ALL)
+  @BatchSize(size = 1000)
   public List<MapVersionReview> getReviews() {
     return reviews;
   }
 
   @OneToOne(mappedBy = "mapVersion")
   @UpdatePermission(expression = Prefab.ALL)
+  @BatchSize(size = 1000)
   public MapVersionReviewsSummary getReviewsSummary() {
     return reviewsSummary;
   }

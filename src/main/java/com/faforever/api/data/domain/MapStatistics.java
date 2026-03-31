@@ -2,6 +2,7 @@ package com.faforever.api.data.domain;
 
 import com.yahoo.elide.annotation.Include;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Immutable;
 
 import javax.persistence.Column;
@@ -17,6 +18,7 @@ import javax.persistence.Table;
 @Table(name = "map_statistics")
 @Include(rootLevel = true, type = MapStatistics.TYPE_NAME)
 @Immutable
+@BatchSize(size = 1000)
 public class MapStatistics {
   public static final String TYPE_NAME = "mapStatistics";
 

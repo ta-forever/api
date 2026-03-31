@@ -18,6 +18,7 @@ import javax.persistence.Table;
 @Table(name = "map_version_statistics")
 @Include(rootLevel = true, type = "mapVersionStatistics")
 @Immutable
+@BatchSize(size = 1000)
 public class MapVersionStatistics {
   private int id;
   private int downloads;

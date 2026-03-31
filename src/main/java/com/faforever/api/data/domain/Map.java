@@ -85,6 +85,7 @@ public class Map extends AbstractEntity implements OwnableEntity {
   }
 
   @OneToOne(mappedBy = "map")
+  @BatchSize(size = 1000)
   public MapStatistics getStatistics() {
     return statistics;
   }
@@ -104,6 +105,7 @@ public class Map extends AbstractEntity implements OwnableEntity {
 
   @OneToOne(mappedBy = "map")
   @UpdatePermission(expression = Prefab.ALL)
+  @BatchSize(size = 1000)
   public MapReviewsSummary getReviewsSummary() {
     return reviewsSummary;
   }

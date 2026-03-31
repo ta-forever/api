@@ -11,7 +11,6 @@ import org.springframework.cache.interceptor.CacheResolver;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,7 +29,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @EnableCaching(proxyTargetClass = true)
 @Configuration
-@Profile(ApplicationProfile.PRODUCTION)
 public class CacheConfig {
 
   @Bean
@@ -49,6 +47,7 @@ public class CacheConfig {
       new CaffeineCache(Map.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(MapVersion.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(MapStatistics.TYPE_NAME, newBuilder().expireAfterWrite(1, MINUTES).build()),
+      new CaffeineCache(MatchmakerQueueMapPool.TYPE_NAME, newBuilder().expireAfterWrite(5, MINUTES).build()),
       new CaffeineCache(Mod.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       new CaffeineCache(ModVersion.TYPE_NAME, newBuilder().expireAfterWrite(60, MINUTES).build()),
       // Other caches

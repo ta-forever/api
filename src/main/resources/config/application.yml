@@ -38,7 +38,7 @@ spring:
     hikari:
       connection-test-query: SELECT 1 FROM DUAL
       minimum-idle: 2
-      maximum-pool-size: 12
+      maximum-pool-size: 20
   jpa:
     hibernate:
       naming:
@@ -46,7 +46,11 @@ spring:
     properties:
       hibernate:
         current_session_context_class: org.springframework.orm.hibernate5.SpringSessionContext
-        dialect: org.hibernate.dialect.MySQL5Dialect
+        dialect: org.hibernate.dialect.MySQL57Dialect
+      javax:
+        persistence:
+          query:
+            timeout: ${JPA_QUERY_TIMEOUT:15000}
   jackson:
     serialization:
       WRITE_DATES_AS_TIMESTAMPS: false
@@ -82,6 +86,10 @@ server:
       charset: utf-8
       enabled: true
       force: true
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:200}
+    connection-timeout: ${TOMCAT_CONNECTION_TIMEOUT:30s}
   jetty:
     max-http-form-post-size: 367001600
   forward-headers-strategy: native

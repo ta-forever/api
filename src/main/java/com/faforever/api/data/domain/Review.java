@@ -4,6 +4,7 @@ import com.faforever.api.data.checks.IsEntityOwner;
 import com.faforever.api.data.checks.Prefab;
 import com.yahoo.elide.annotation.UpdatePermission;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.Column;
 import javax.persistence.FetchType;
@@ -38,6 +39,7 @@ public class Review extends AbstractEntity implements OwnableEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_id")
   @UpdatePermission(expression = Prefab.ALL)
+  @BatchSize(size = 1000)
   public Player getPlayer() {
     return player;
   }

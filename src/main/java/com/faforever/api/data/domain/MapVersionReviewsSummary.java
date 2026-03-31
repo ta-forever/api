@@ -19,6 +19,7 @@ import javax.persistence.Table;
 @Table(name = "map_version_reviews_summary")
 @Include(type = "mapVersionReviewsSummary")
 @Immutable
+@BatchSize(size = 1000)
 public class MapVersionReviewsSummary {
   private int id;
   private float positive;
