@@ -11,6 +11,7 @@ import org.springframework.cache.interceptor.CacheResolver;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,6 +30,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @EnableCaching(proxyTargetClass = true)
 @Configuration
+@Profile("!" + ApplicationProfile.INTEGRATION_TEST)
 public class CacheConfig {
 
   @Bean
