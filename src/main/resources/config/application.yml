@@ -90,6 +90,7 @@ server:
     threads:
       max: ${TOMCAT_MAX_THREADS:200}
     connection-timeout: ${TOMCAT_CONNECTION_TIMEOUT:30s}
+    relaxed-query-chars: '[,]'
   jetty:
     max-http-form-post-size: 367001600
   forward-headers-strategy: native
